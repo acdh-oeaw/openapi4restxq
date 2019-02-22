@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="https://lab.sub.uni-goettingen.de/restxqopenapi">
+  <info>
+  <termsOfService>https://example.com/terms-of-use</termsOfService>
+  <contact>
+      <email>info@example.com</email>
+  </contact>
+  </info>
+  <servers>
+    <server url="http://localhost:8080/exist/restxq">Local development server</server>
+  </servers>
+</config>
