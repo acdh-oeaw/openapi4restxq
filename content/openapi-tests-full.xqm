@@ -34,13 +34,15 @@ declare
 
 %test:arg("paramPath", "here")
 %test:arg("int", "123")
+%test:arg("format", "xquery")
 %test:arg("getParam", "and-get")
+%test:arg("body", "<incomming><node/></incomming>")
 function openapi-test-full:post(
     $paramPath as xs:string,
     $int as xs:int,
     $format as xs:string,
     $getParam as xs:string+,
-    $body as item()?)
+    $body as item()*)
 as element(test) {
     <test>
         <parameters n="6">
