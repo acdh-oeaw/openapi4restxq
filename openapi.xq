@@ -14,9 +14,11 @@ declare option output:media-type "application/json";
 let $prepare := xmldb:get-child-resources("/db/apps/openapi/content")[. != "openapi.xqm"]
     ! exrest:register-module(xs:anyURI("/db/apps/openapi/content/" || .))
 
+(: locate the target path :)
+let $thisPath := replace(system:get-module-load-path(),
+'^(xmldb:exist://)?(embedded-eXist-server)?(.+)$', '$3')
+let $target := request:get-parameter("target", $thisPath)
 return
 
 (: prepare OpenAPI as map(*) :)
-openapi:main("/db/apps/openapi")
-
-(: ("paths")("/openapi-test/full/get/{param1}/{param2}.{format}") :)
+openapi:main($target)
