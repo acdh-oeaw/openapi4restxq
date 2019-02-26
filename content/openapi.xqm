@@ -14,7 +14,7 @@ declare namespace rest="http://exquery.org/ns/restxq";
 declare namespace pkg="http://expath.org/ns/pkg";
 declare namespace repo="http://exist-db.org/xquery/repo";
 
-declare variable $openapi:supported-methods := ("rest:GET", "rest:HEAD", "rest:POST", "rest:PUT", "rest:DELETE");
+declare %private variable $openapi:supported-methods := ("rest:GET", "rest:HEAD", "rest:POST", "rest:PUT", "rest:DELETE");
 
 (:~
  : Prepares a JSON document usually to be stored as "openapi.json".
@@ -90,7 +90,7 @@ as map(*) {
  : Prepare a OAS License Object
  : @see https://swagger.io/specification/#licenseObject
  :)
-declare function openapi:license-object($repo as element(repo:meta))
+declare %private function openapi:license-object($repo as element(repo:meta))
 as map(*) {
   let $licenseId := string($repo/repo:license)
   let $url := (map:get(openapi:spdx($licenseId), "seeAlso")?*)[1]
@@ -106,7 +106,7 @@ as map(*) {
  : Prepares a OAS3 Servers Object
  : @see https://swagger.io/specification/#serverObject
  :)
-declare function openapi:servers-object($config as element(openapi:servers))
+declare %private function openapi:servers-object($config as element(openapi:servers))
 as map(*) {
   map{
       "servers":[
@@ -138,7 +138,7 @@ as map(*) {
  : Prepare OAS3 Operation Object.
  : @see https://swagger.io/specification/#operationObject
  :)
-declare function openapi:operation-object($function as element(function))
+declare %private function openapi:operation-object($function as element(function))
 as map(*) {
   let $desc := normalize-space($function/description)
   let $see := normalize-space($function/see)
@@ -146,7 +146,7 @@ as map(*) {
   let $tags := array { $function/@name => substring-before(":") }
   return
   map{
-    $function/annotation[@name = "rest:path"]/replace(value, "\{\$", "{") :
+    $function/annotation[@name eq "rest:path"]/replace(value, "\{\$", "{") :
     for $method in $function/annotation[@name = $openapi:supported-methods]/substring-after(lower-case(@name), "rest:")
     return
     map{
@@ -159,17 +159,43 @@ as map(*) {
           "description": "the official documentation by the maintainer or a thrid-party documentation"}},
         $deprecated ! map{"deprecated": true()},
         openapi:parameter-object($function),
-        openapi:responses-object($function)
+        openapi:responses-object($function),
+        openapi:requestBody-object($function)
       ))
     }
   }
+};
+
+declare %private function openapi:requestBody-object($function as element(function))
+as map(*)? {
+if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/value))) then () else
+    let $name := replace($function/annotation[@name = ("rest:POST", "rest:PUT")]/value, "\{|\}|\$", "")
+    let $desc := string($function/argument[@var eq $name])
+    let $example := string(($function/annotation[@name="test:arg"][value[1] eq $name])[1]/value[2])
+    return
+    map{
+        "requestBody":  map{
+            "description": "Value to process as variable: $" || $name,
+            "content": map{
+                "application/xml": map{
+                    "examples": map{
+                        $name: map{
+                            "summary": $desc,
+                            "value": serialize($example)
+                        }
+                    }
+                }
+            },
+            "required": true()
+        }
+    }
 };
 
 (:~
  : Prepare OAS3 Response Object.
  : @see https://swagger.io/specification/#responsesObject
  :  :)
-declare function openapi:responses-object($function as element(function))
+declare %private function openapi:responses-object($function as element(function))
 as map(*){
   map{
     "responses":
@@ -186,8 +212,22 @@ as map(*){
  : Prepare OAS3 Parameter Object.
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare function openapi:parameter-object($function as element(function))
+declare %private function openapi:parameter-object($function as element(function))
 as map(*) {
+    map{
+      "parameters": array{
+          openapi:parameters-path($function),
+          openapi:parameters-query($function)
+      }
+    }
+};
+
+(:~
+ : Prepares all PATH parameters for a given function
+ : @param $function A function element from the inspect module
+ : :)
+declare %private function openapi:parameters-path($function as element(function))
+as map(*)* {
     let $pathParameters :=
         $function/annotation[@name = "rest:path"][1]
             /tokenize(value, "\{")
@@ -196,56 +236,56 @@ as map(*) {
                 => substring-after("$")
                 => substring-before("}")
             )
-    let $pathParametersMap :=
-        for $parameter in $pathParameters
-        let $name := replace($parameter, "\{|\$|\}", "")
-        let $argument := $function/argument[@var eq $name]
-        let $basics := map:merge((
-                    map{
-                        "name": $name,
-                        "in": "path",
-                        "required": true()},
-                        openapi:schema-object($argument)
-        ))
-        let $description := $function/argument[@var = $name]/text() ! map{ "description": .}
-        let $example := string($function/annotation[@name = "test:arg"][value[1] = $name]/value[2]) ! map{ "example": .}
-        return
-            map:merge(($basics, $description, $example))
 
-    let $queryParameters := $function/annotation[@name = "rest:query-param"]
-    let $queryParametersMap :=
-        for $parameter in $queryParameters
-        let $name := string($parameter/value[2]) => replace("\{|\$|\}", "")
-        let $argument := $function/argument[@var eq $name]
-        let $required := exists($parameter/value[3] and not(contains($argument/@cardinality, "zero")))
-        let $basics :=
-                map:merge((
-                    map{
-                        "name": $name,
-                        "in": "query",
-                        "required": $required
-                        },
-                        openapi:schema-object($argument)
-                    ))
-        let $description := $function/argument[@var = $name]/text() ! map{ "description": .}
-        let $pos := index-of(($function/argument/string(@var)), $name)
-        let $example := $function/annotation[@name = "test:args"][1]/value[$pos]/text() ! map{ "example": .}
-        return
-            map:merge(($basics, $description, $example))
+    for $parameter in $pathParameters
+    let $name := replace($parameter, "\{|\$|\}", "")
+    let $argument := $function/argument[@var eq $name]
+    let $basics := map:merge((
+                map{
+                    "name": $name,
+                    "in": "path",
+                    "required": true()},
+                    openapi:schema-object($argument)
+    ))
+    let $description := $function/argument[@var = $name]/text() ! map{ "description": .}
+    let $example := openapi:example($function, $name)
     return
-        map{
-          "parameters": array{
-              $pathParametersMap,
-              $queryParametersMap
-          }
-        }
+        map:merge(($basics, $description, $example))
+
+};
+
+(:~
+ : Prepares all QUERY parameters for a given function
+ : @param $function A function element from the inspect module
+ : :)
+declare %private function openapi:parameters-query($function as element(function))
+as map(*)* {
+    let $queryParameters := $function/annotation[@name = "rest:query-param"]
+    for $parameter in $queryParameters
+    let $name := string($parameter/value[2]) => replace("\{|\$|\}", "")
+    let $argument := $function/argument[@var eq $name]
+    let $required := exists($parameter/value[3] and not(contains($argument/@cardinality, "zero")))
+    let $basics :=
+            map:merge((
+                map{
+                    "name": $name,
+                    "in": "query",
+                    "required": $required
+                    },
+                    openapi:schema-object($argument)
+                ))
+    let $description := $function/argument[@var = $name]/text() ! map{ "description": .}
+    let $pos := index-of(($function/argument/string(@var)), $name)
+    let $example := openapi:example($function, $name)
+    return
+        map:merge(($basics, $description, $example))
 };
 
 (:~
  : Prepare OAS3 Media Type Object.
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare function openapi:mediaType-object($function)
+declare %private function openapi:mediaType-object($function)
 as map(*) {
   let $produces := (
         string($function/annotation[@name="rest:produces"]),
@@ -265,7 +305,7 @@ as map(*) {
  : either *:returns or *:argument
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare function openapi:schema-object($returns as element(*))
+declare %private function openapi:schema-object($returns as element(*))
 as map(*) {
   map{"schema":
     map:merge((
@@ -278,7 +318,7 @@ as map(*) {
   }
 };
 
-declare function openapi:tags-object($modules as element(module)+)
+declare %private function openapi:tags-object($modules as element(module)+)
 as map(*) {
   map{
     "tags": array{
@@ -313,7 +353,7 @@ return
  : @param $method One of the specified methods
  : @see https://www.w3.org/TR/xslt-xquery-serialization/
  :  :)
-declare function openapi:method-mediaType($method as xs:string?)
+declare %private function openapi:method-mediaType($method as xs:string?)
 as xs:string?{
     switch ($method)
         case "html" return "text/html"
@@ -323,4 +363,14 @@ as xs:string?{
         case "json" return "application/json"
         (: case "adaptive" return () :)
         default return ()
+};
+
+(:~
+ : Prepare an example value based on XQSuite annotation
+ : @param $function A function element from inspect module
+ : @param $name The name of the argument to prepare an example for :)
+declare %private function openapi:example($function as element(function), $name as xs:string)
+as map(*)* {
+    string($function/annotation[@name = "test:arg"][value[1] = $name]/value[2])
+    ! map{ "example": .}
 };
