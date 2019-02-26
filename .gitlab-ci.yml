@@ -11,6 +11,7 @@ build-develop:
       - tags
   stage: build
   script:
+    - npm install
     - ant test
   artifacts:
     paths:
@@ -23,6 +24,7 @@ build-master:
   stage: build
   script:
     - cp master.build.properties local.build.properties
+    - npm install
     - ant test
   artifacts:
     paths:
