@@ -146,7 +146,7 @@ as map(*) {
   let $tags := array { $function/@name => substring-before(":") }
   return
   map{
-    $function/annotation[@name = "rest:path"]/replace(value, "\{\$", "{") :
+    $function/annotation[@name eq "rest:path"]/replace(value, "\{\$", "{") :
     for $method in $function/annotation[@name = $openapi:supported-methods]/substring-after(lower-case(@name), "rest:")
     return
     map{
@@ -159,10 +159,36 @@ as map(*) {
           "description": "the official documentation by the maintainer or a thrid-party documentation"}},
         $deprecated ! map{"deprecated": true()},
         openapi:parameter-object($function),
-        openapi:responses-object($function)
+        openapi:responses-object($function),
+        openapi:requestBody-object($function)
       ))
     }
   }
+};
+
+declare %private function openapi:requestBody-object($function as element(function))
+as map(*)? {
+if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/value))) then () else
+    let $name := replace($function/annotation[@name = ("rest:POST", "rest:PUT")]/value, "\{|\}|\$", "")
+    let $desc := string($function/argument[@var eq $name])
+    let $example := string(($function/annotation[@name="test:arg"][value[1] eq $name])[1]/value[2])
+    return
+    map{
+        "requestBody":  map{
+            "description": "Value to process as variable: $" || $name,
+            "content": map{
+                "application/xml": map{
+                    "examples": map{
+                        $name: map{
+                            "summary": $desc,
+                            "value": serialize($example)
+                        }
+                    }
+                }
+            },
+            "required": true()
+        }
+    }
 };
 
 (:~
