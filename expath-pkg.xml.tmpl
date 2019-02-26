@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://expath.org/ns/pkg"
+  name="@project.name@"
+  abbrev="@project.abbrev@"
+  version="@project.version@"
+  spec="1.0"
+  xml:id="restxqopenapi">
+  <title>@project.title@</title>
+  <dependency processor="http://exist-db.org" semver-min="@project.processorversion@"/>
+  <xquery>
+    <namespace>https://lab.sub.uni-goettingen.de/restxqopenapi</namespace>
+    <file>openapi.xqm</file>
+  </xquery>
+</package>

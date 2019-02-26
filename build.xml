@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="xar" name="openapi4restxq">
+
+  <property name="build.dir" value="build"/>
+  <property file="local.build.properties"/>
+  <property file="build.properties"/>
+
+  <antversion property="antversion"/>
+  <available file="node_modules/swagger-ui-dist" type="dir" property="swagger-ui-dist.present"/>
+  <target name="antversion-test">
+    <antversion property="antversionReady" atleast="1.10"/>
+    <fail unless="antversionReady">installed version of ant (${antversion}) is lower than the required one (1.10.0)</fail>
+    <echo message="installed version of ant (${antversion}) is satisfying"/>
+  </target>
+
+  <target name="xar" depends="cleanup, swagger-ui, spdx">
+      <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
+          <filterset>
+              <filter token="project.version" value="${project.version}"/>
+              <filter token="project.title" value="${project.title}"/>
+              <filter token="project.abbrev" value="${project.abbrev}"/>
+              <filter token="project.name" value="${project.name}"/>
+              <filter token="project.processorversion" value="${project.processorversion}"/>
+          </filterset>
+      </copy>
+
+      <mkdir dir="${build.dir}"/>
+      <zip basedir="." destfile="${destfile}" defaultexcludes="no"
+          excludes=".git/,${build.dir}/,${test.dir}/,node_modules/"/>
+  </target>
+
+  <target name="swagger-ui-test" unless="swagger-ui-dist.present">
+    <echo level="warning">swagger-ui-dist is not available in ./node_modules.
+Run `npm install` first to build a package that includes swagger-ui.</echo>
+  </target>
+  <target name="swagger-ui" depends="swagger-ui-test" if="swagger-ui-dist.present">
+      <!-- swagger ui -->
+      <copy file="node_modules/swagger-ui-dist/favicon-16x16.png" tofile="resources/swagger/favicon-16x16.png" overwrite="true" />
+      <copy file="node_modules/swagger-ui-dist/favicon-32x32.png" tofile="resources/swagger/favicon-32x32.png" overwrite="true" />
+      <copy file="node_modules/swagger-ui-dist/swagger-ui.css" tofile="resources/swagger/swagger-ui.css" overwrite="true" />
+      <copy file="node_modules/swagger-ui-dist/swagger-ui-standalone-preset.js" tofile="resources/swagger/swagger-ui-standalone-preset.js" overwrite="true" />
+      <copy file="node_modules/swagger-ui-dist/swagger-ui-bundle.js" tofile="resources/swagger/swagger-ui-bundle.js" overwrite="true" />
+      <copy file="node_modules/swagger-ui-dist/index.html" tofile="index.html" overwrite="true" />
+      <replace file="index.html" token="&gt;Swagger UI&lt;" value="&gt;Swagger UI for ${project.title}&lt;"/>
+      <replace file="index.html" token=".css&quot; &lt;" value=".css&quot; /&lt;"/>
+      <replace file="index.html" token="UTF-8&quot;&lt;" value="UTF-8&quot;/&lt;"/>
+      <replaceregexp file="index.html" match="url:.*" replace=" url: 'openapi.json'," />
+      <replaceregexp file="index.html" match="(src|href)=&quot;\./" replace="\1=&quot;resources/swagger/" flags="g"/>
+  </target>
+
+  <target name="cleanup">
+    <delete dir="${test.dir}"/>
+  </target>
+
+  <target name="spdx">
+    <get src="https://spdx.org/licenses/licenses.json" dest="spdx-licenses.json"/>
+  </target>
+
+  <target name="test" depends="antversion-test, xar">
+    <!-- task setpermissions requries at least ant 1.10.0 -->
+    <get src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2" dest="${build.dir}/eXist-db-${project.processorversion}.tar.bz2" skipexisting="true" />
+    <untar src="${build.dir}/eXist-db-${project.processorversion}.tar.bz2" dest="${test.dir}" compression="bzip2" />
+    <setpermissions mode="755">
+      <file file="${test.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
+    </setpermissions>
+    <copy file="${destfile}" todir="${test.dir}/eXist-db-${project.processorversion}/autodeploy" />
+  </target>
+
+</project>
