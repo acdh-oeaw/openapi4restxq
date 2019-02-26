@@ -42,12 +42,14 @@ as map(*) {
     return
         $inspect
 
-  let $config := doc($target || "/openapi-config.xml")/*
-  let $repo := doc($target || "/repo.xml")/*
+  let $config-uri := $target || "/openapi-config.xml"
+  let $config := if(doc-available($config-uri))
+                then doc($config-uri)/*
+                else (//openapi:config)[last()]  let $repo := doc($target || "/repo.xml")/*
   let $expath := doc($target || "/expath-pkg.xml")/*
   return
     map:merge((
-    map{"openapi": "3.0.1"},
+    map{"openapi": "3.0.2"},
     openapi:paths-object($module),
     openapi:servers-object($config/openapi:servers),
     openapi:info-object($expath, $repo, $config/openapi:info),
