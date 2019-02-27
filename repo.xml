@@ -8,7 +8,7 @@
     <type>application</type>
     <target>openapi</target>
     <changelog>
-      <change version="1.1.0">
+      <change version="1.1.1">
         <ul xmlns="http://www.w3.org/1999/xhtml">
           <li class="feat">Features
             <ul style="margin-left: 15px;">
@@ -17,6 +17,7 @@
               <li>update SPDX</li>
             </ul>
           </li>
+        </ul>
       </change>
       <change version="1.0.0">
         <ul xmlns="http://www.w3.org/1999/xhtml">
@@ -28,6 +29,7 @@
               <li>Parse <a href="http://exist-db.org/exist/apps/doc/xqsuite.xml">test annotations</a></li>
             </ul>
           </li>
+        </ul>
       </change>
   </changelog>
 </meta>
