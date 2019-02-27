@@ -112,14 +112,14 @@ as map(*) {
 declare %private function openapi:servers-object($config as element(openapi:servers))
 as map(*) {
   map{
-      "servers":[
+      "servers": array {
         for $server in $config/openapi:server
         return
           map{
             "url": string($server/@url),
             "description": string($server)
           }
-        ]
+        }
   }
 };
 
@@ -195,7 +195,7 @@ if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/value))) t
 };
 
 (:~
- : Prepare OAS3 Response Object.
+ : Prepare OAS3 Responses Object.
  : @see https://swagger.io/specification/#responsesObject
  :  :)
 declare %private function openapi:responses-object($function as element(function))
@@ -213,14 +213,16 @@ as map(*){
 
 (:~
  : Prepare OAS3 Parameter Object.
- : @see https://swagger.io/specification/#mediaTypeObject
+ : @see https://swagger.io/specification/#parameterObject
  :  :)
 declare %private function openapi:parameter-object($function as element(function))
 as map(*) {
     map{
       "parameters": array{
           openapi:parameters-path($function),
-          openapi:parameters-query($function)
+          openapi:parameters($function, "query"),
+          openapi:parameters($function, "header"),
+          openapi:parameters($function, "cookie")
       }
     }
 };
@@ -228,6 +230,7 @@ as map(*) {
 (:~
  : Prepares all PATH parameters for a given function
  : @param $function A function element from the inspect module
+ : @see https://swagger.io/specification/#parameterObject
  : :)
 declare %private function openapi:parameters-path($function as element(function))
 as map(*)* {
@@ -258,30 +261,33 @@ as map(*)* {
 };
 
 (:~
- : Prepares all QUERY parameters for a given function
+ : Prepares all QUERY, HEADER and COOKIE parameters for a given function
  : @param $function A function element from the inspect module
+ : @see https://swagger.io/specification/#parameterObject
  : :)
-declare %private function openapi:parameters-query($function as element(function))
+declare %private function openapi:parameters($function as element(function), $source as xs:string)
 as map(*)* {
-    let $queryParameters := $function/annotation[@name = "rest:query-param"]
-    for $parameter in $queryParameters
-    let $name := string($parameter/value[2]) => replace("\{|\$|\}", "")
-    let $argument := $function/argument[@var eq $name]
-    let $required := exists($parameter/value[3] and not(contains($argument/@cardinality, "zero")))
-    let $basics :=
-            map:merge((
-                map{
-                    "name": $name,
-                    "in": "query",
-                    "required": $required
-                    },
-                    openapi:schema-object($argument)
+    let $parameters := $function/annotation[@name = "rest:" || $source || "-param"]
+    for $annotation in $parameters
+        let $varName := string($annotation/value[2]) => replace("\{|\$|\}", "")
+        let $name := string($annotation/value[1])
+        let $argument := $function/argument[@var eq $varName]
+        let $required :=
+            (: when a default value is present and the cardinality is not ? or * :)
+            exists($annotation/value[3]) and not(contains($argument/@cardinality, "zero"))
+        let $basics :=
+                map:merge((
+                    map{
+                        "name": $name,
+                        "in": $source,
+                        "required": $required
+                        },
+                        openapi:schema-object($argument)
                 ))
-    let $description := $function/argument[@var = $name]/text() ! map{ "description": .}
-    let $pos := index-of(($function/argument/string(@var)), $name)
-    let $example := openapi:example($function, $name)
-    return
-        map:merge(($basics, $description, $example))
+        let $description := $argument/text() ! map{ "description": .}
+        let $example := openapi:example($function, $varName)
+        return
+            map:merge(($basics, $description, $example))
 };
 
 (:~
@@ -309,14 +315,16 @@ as map(*) {
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
 declare %private function openapi:schema-object($returns as element(*))
-as map(*) {
-  map{"schema":
+as map(*)? {
+  map{ "schema":
     map:merge((
         map{
           "type": "string",
           "x-xml-type": string($returns/@type)
         },
-        if(contains($returns/@cardinality, "zero")) then map{ "nullable": true() } else ()
+        if(contains($returns/@cardinality, "zero"))
+        then map{ "nullable": true() }
+        else ()
     ))
   }
 };
@@ -374,6 +382,6 @@ as xs:string?{
  : @param $name The name of the argument to prepare an example for :)
 declare %private function openapi:example($function as element(function), $name as xs:string)
 as map(*)* {
-    string($function/annotation[@name = "test:arg"][value[1] = $name]/value[2])
+    string($function/annotation[@name = "test:arg"][value[1] eq $name]/value[2])
     ! map{ "example": .}
 };

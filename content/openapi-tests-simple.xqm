@@ -25,6 +25,72 @@ as element(test) {
     </test>
 };
 
+(:~
+ : Simple GET Method Test with HEADER parameter for OpenAPI
+ : @param $test A string added to the request header “x-test”
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:GET
+%rest:path("/openapi-test/simple/get-header")
+%rest:header-param("x-test", "{$test}")
+function openapi-test-simple:get-header($test as xs:string*)
+as element(test) {
+    <test>
+        <parameters n="1">
+            <header>{ $test }</header>
+        </parameters>
+        <response n="1" type="application/xml"/>
+    </test>
+};
+
+(:~
+ : Simple GET Method Test with COOKIE parameter for OpenAPI
+ : @param $test A string added to the request header “x-test”
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:GET
+%rest:path("/openapi-test/simple/get-cookie")
+%rest:cookie-param("tasty_cookie", "{$test}")
+function openapi-test-simple:get-cookie($test as xs:string*)
+as element(test) {
+    <test>
+        <parameters n="1">
+            <cookie>{ $test }</cookie>
+        </parameters>
+        <response n="1" type="application/xml"/>
+    </test>
+};
+
+(:~
+ : Simple GET Method Test with multiple parameter for OpenAPI
+ : @param $test A string added to the request header “x-test”
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:GET
+%rest:path("/openapi-test/simple/get-multi")
+%rest:query-param("getTest1", "{$getTest1}")
+%rest:query-param("getTest2", "{$getTest2}")
+%rest:cookie-param("tasty_cookie", "{$cookieTest}")
+%rest:header-param("x-test", "{$headerTest}")
+function openapi-test-simple:get-cookie($getTest1 as xs:string*, $getTest2 as xs:string*, $cookieTest as xs:string*, $headerTest as xs:string*)
+as element(test) {
+    <test>
+        <parameters n="4">
+            <header>{ $headerTest }</header>
+            <cookie>{ $cookieTest }</cookie>
+            <get1>{ $getTest1 }</get1>
+            <get2>{ $getTest2 }</get2>
+        </parameters>
+        <response n="1" type="application/xml"/>
+    </test>
+};
+
 
 (:~
  : Simple but deprecated GET Method Test for OpenAPI
