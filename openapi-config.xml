@@ -8,5 +8,6 @@
   </info>
   <servers>
     <server url="http://localhost:8080/exist/restxq">Local development server</server>
+    <server url="https://example.com/api/v1">Production server</server>
   </servers>
 </config>
