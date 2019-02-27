@@ -25,6 +25,45 @@ as element(test) {
     </test>
 };
 
+(:~
+ : Simple GET Method Test with HEADER parameter for OpenAPI
+ : @param $test A string added to the request header “x-test”
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:GET
+%rest:path("/openapi-test/simple/get-header")
+%rest:header-param("x-test", "{$test}")
+function openapi-test-simple:get-header($test as xs:string*)
+as element(test) {
+    <test>
+        <parameters n="1">
+            <header>{ $test }</header>
+        </parameters>
+        <response n="1" type="application/xml"/>
+    </test>
+};
+
+(:~
+ : Simple GET Method Test with COOKIE parameter for OpenAPI
+ : @param $test A string added to the request header “x-test”
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:GET
+%rest:path("/openapi-test/simple/get-cookie")
+%rest:cookie-param("tasty_cookie", "{$test}")
+function openapi-test-simple:get-cookie($test as xs:string*)
+as element(test) {
+    <test>
+        <parameters n="1">
+            <header>{ $test }</header>
+        </parameters>
+        <response n="1" type="application/xml"/>
+    </test>
+};
 
 (:~
  : Simple but deprecated GET Method Test for OpenAPI
