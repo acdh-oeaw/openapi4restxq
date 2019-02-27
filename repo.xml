@@ -8,22 +8,26 @@
     <type>application</type>
     <target>openapi</target>
     <changelog>
+      <change version="1.1.0">
+        <ul xmlns="http://www.w3.org/1999/xhtml">
+          <li class="feat">Features
+            <ul style="margin-left: 15px;">
+              <li>add a pareser for cookie and header parameter</li>
+              <li>refine test modules</li>
+              <li>update SPDX</li>
+            </ul>
+          </li>
+      </change>
       <change version="1.0.0">
         <ul xmlns="http://www.w3.org/1999/xhtml">
           <li class="feat">Features
-            <ul>
+            <ul style="margin-left: 15px;">
               <li>Prepares OpenAPI 3.0.2 documentation file (json)</li>
               <li>Parse <a href="http://exquery.github.io/exquery/exquery-restxq-specification/restxq-1.0-specification.html">RESTXQ</a></li>
-              <li>Parse <a href="http://xqdoc.org/xqdoc_comments_doc.html">xqDocs</a></li>
+              <li>Parse <a href="http://xqdoc.org/xqdoc_comments_doc.html">xqDoc</a></li>
               <li>Parse <a href="http://exist-db.org/exist/apps/doc/xqsuite.xml">test annotations</a></li>
             </ul>
           </li>
-          <li class="bugs">Bugfixes
-            <ul>
-              <li></li>
-            </ul>
-          </li>
-        </ul>
       </change>
   </changelog>
 </meta>
