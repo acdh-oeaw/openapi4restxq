@@ -112,14 +112,14 @@ as map(*) {
 declare %private function openapi:servers-object($config as element(openapi:servers))
 as map(*) {
   map{
-      "servers":[
+      "servers": array {
         for $server in $config/openapi:server
         return
           map{
             "url": string($server/@url),
             "description": string($server)
           }
-        ]
+        }
   }
 };
 
