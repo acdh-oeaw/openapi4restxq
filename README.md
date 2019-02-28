@@ -50,8 +50,8 @@ else if (starts-with($exist:path, "/openapi/")) then
 ```
 
 ### Standalone
-By default the application provide a preview and a few simple REST paths as test
-interfaces. Just open the application via the Dashboard or browse to [http://localhost:8080/exist/apps/openapi/index.html](http://localhost:8080/exist/apps/openapi/index.html).
+By default the application provides a preview and a few simple REST paths as test
+interfaces. Open the application via the Dashboard or browse to [http://localhost:8080/exist/apps/openapi/index.html](http://localhost:8080/exist/apps/openapi/index.html).
 
 To view the documentation for other packages, use the input filed in the top bar
 to ask for a description file at `openapi.json?target=/db/apps/myApplication`.
