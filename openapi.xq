@@ -6,21 +6,22 @@ import module namespace openapi="https://lab.sub.uni-goettingen.de/restxqopenapi
   at "content/openapi.xqm";
 
 (: prepare a json document on HTTP requests :)
-declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 declare option output:method "json";
 declare option output:media-type "application/json";
+
+let $thisPath := replace(system:get-module-load-path(),
+'^(xmldb:exist://)?(embedded-eXist-server)?(.+)$', '$3')
 
 (: we register the REST interface :)
 let $prepare :=
   if(xs:boolean(request:get-parameter("register", "false")))
   then
-    xmldb:get-child-resources("/db/apps/openapi/content")[. != "openapi.xqm"]
-    ! exrest:register-module(xs:anyURI("/db/apps/openapi/content/" || .))
+    xmldb:get-child-resources($thisPath || "/content")[. != "openapi.xqm"]
+    ! exrest:register-module(xs:anyURI($thisPath || "/content/" || .))
   else ()
 
 (: locate the target path :)
-let $thisPath := replace(system:get-module-load-path(),
-'^(xmldb:exist://)?(embedded-eXist-server)?(.+)$', '$3')
 let $target := request:get-parameter("target", $thisPath)
 return
 
