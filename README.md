@@ -33,9 +33,37 @@ the file in the `autodeploy` directory or using the package manager application
 installed by default at a running database.
 
 ## Use
-The package provides a
+### Integrated in own applications
+By adding the following lines to the `controller.xql` a path like
+[/myApplication/openapi/index.html](http://localhost:8080/exist/apps/myApplication/openapi/index.html)
+will become available. (The usage of the pipe operator requires XQuery version 3.1.)
+```xq
+else if (starts-with($exist:path, "/openapi/")) then
+  <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+    <forward
+      url="/openapi/{ $exist:path => substring-after("/openapi/") => replace("json", "xq") }"
+      method="get">
+      <add-parameter name="target" value="{ substring-after($exist:root, "://") || $exist:controller }"/>
+      <add-parameter name="register" value="false"/>
+    </forward>
+  </dispatch>
+```
+
+### Standalone
+By default the application provide a preview and a few simple REST paths as test
+interfaces. Just open the application via the Dashboard or browse to [http://localhost:8080/exist/apps/openapi/index.html](http://localhost:8080/exist/apps/openapi/index.html).
+
+To view the documentation for other packages, use the input filed in the top bar
+to ask for a description file at `openapi.json?target=/db/apps/myApplication`.
+Optional the re-registration of functions to the RESTXQ engine is possible via
+an additional parameter: `&register=true`.
 
 ## Configure
+To include information not present in one of the parsed documents, the library
+checks the availability of a resources named `openapi-config.xml` in the
+root collection of the application where to create the description file for.
+It is recommended to place a customized copy of the file provided with this
+package.
 
 ## Develop
 To start developing or testing the package a ant target is available that sets
