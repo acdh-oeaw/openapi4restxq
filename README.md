@@ -77,7 +77,6 @@ Behind the curtain the information will be collected by calling
 inspect:inspect-module(xs:anyURI("/db/apps/openapi/content/openapi-tests-full.xqm"))
 ```
 
-
 ## Limitations
 ### combining path and query parameters
 Query parameters passed by `%rest:query-param()` MUST use a name different from
