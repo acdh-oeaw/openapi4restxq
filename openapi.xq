@@ -11,8 +11,12 @@ declare option output:method "json";
 declare option output:media-type "application/json";
 
 (: we register the REST interface :)
-let $prepare := xmldb:get-child-resources("/db/apps/openapi/content")[. != "openapi.xqm"]
+let $prepare :=
+  if(xs:boolean(request:get-parameter("register", "false")))
+  then
+    xmldb:get-child-resources("/db/apps/openapi/content")[. != "openapi.xqm"]
     ! exrest:register-module(xs:anyURI("/db/apps/openapi/content/" || .))
+  else ()
 
 (: locate the target path :)
 let $thisPath := replace(system:get-module-load-path(),
