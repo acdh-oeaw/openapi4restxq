@@ -12,6 +12,15 @@
         <ul xmlns="http://www.w3.org/1999/xhtml">
           <li class="feat">Features
             <ul style="margin-left: 15px;">
+              <li>Add a parameter for re-registration of RestXQ functions</li>
+            </ul>
+          </li>
+        </ul>
+      </change>
+      <change version="1.1.1">
+        <ul xmlns="http://www.w3.org/1999/xhtml">
+          <li class="feat">Features
+            <ul style="margin-left: 15px;">
               <li>add a pareser for cookie and header parameter</li>
               <li>refine test modules</li>
               <li>update SPDX</li>
