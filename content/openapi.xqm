@@ -45,7 +45,7 @@ as map(*) {
   let $config-uri := $target || "/openapi-config.xml"
   let $config :=  if(doc-available($config-uri))
                   then doc($config-uri)/*
-                  else doc( replace(system:get-module-load-path(), '^(xmldb:exist://)?(embedded-eXist-server)?(.+)$', '$3') || "/openapi-config.xml" )/*
+                  else doc( replace(system:get-module-load-path(), '^(xmldb:exist://)?(embedded-eXist-server)?(.+)$', '$3') || "/../openapi-config.xml" )/*
   let $expath := doc($target || "/expath-pkg.xml")/*
   let $repo := doc($target || "/repo.xml")/*
   return
