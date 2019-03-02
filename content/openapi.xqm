@@ -37,10 +37,10 @@ as map(*) {
   let $modules-uris := collection($target)[ends-with(base-uri(), ".xqm")]/base-uri()
   let $module :=
     for $module in $modules-uris
-    let $inspect := inspect:inspect-module($module)
-    where $inspect/function/annotation/string(@name) = $openapi:supported-methods
+    let $test4rest := contains(util:binary-doc($module) => util:base64-decode(), "%rest:")
+    where $test4rest
     return
-        $inspect
+      inspect:inspect-module($module)
 
   let $config-uri := $target || "/openapi-config.xml"
   let $config :=  if(doc-available($config-uri))
