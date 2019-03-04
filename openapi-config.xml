@@ -10,4 +10,11 @@
     <server url="http://localhost:8080/exist/restxq">Local development server</server>
     <server url="https://example.com/api/v1">Production server</server>
   </servers>
+  <tags>
+    <tag name="public" method="exclusive">
+        The public part of the API. No authentication. World-readable.
+        <function name="openapi-test-simple:del"/>
+        <function name="openapi-test-simple:get"/>
+    </tag>
+  </tags>
 </config>

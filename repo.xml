@@ -8,6 +8,15 @@
     <type>application</type>
     <target>openapi</target>
     <changelog>
+      <change version="1.5.0">
+        <ul xmlns="http://www.w3.org/1999/xhtml">
+          <li class="feat">Features
+            <ul style="margin-left: 15px;">
+              <li>customized tags via config file</li>
+            </ul>
+          </li>
+        </ul>
+      </change>
       <change version="1.4.0">
         <ul xmlns="http://www.w3.org/1999/xhtml">
           <li class="feat">Features

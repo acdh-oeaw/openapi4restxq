@@ -51,10 +51,10 @@ as map(*) {
   return
     map:merge((
     map{"openapi": "3.0.2"},
-    openapi:paths-object($module),
+    openapi:paths-object($module, $config),
     openapi:servers-object($config/openapi:servers),
     openapi:info-object($expath, $repo, $config/openapi:info),
-    openapi:tags-object($module)
+    openapi:tags-object($module, $config)
     ))
 };
 
@@ -127,7 +127,7 @@ as map(*) {
  : Prepare OAS3 Paths Object.
  : @see https://swagger.io/specification/#pathsObject
  :)
-declare %private function openapi:paths-object($module as element(module)+)
+declare %private function openapi:paths-object($module as element(module)+, $config as element(openapi:config))
 as map(*) {
   let $paths := $module/function/annotation[@name = "rest:path"]/value => distinct-values()
   return
@@ -139,7 +139,7 @@ as map(*) {
         return
           map{
               $path => replace("\{\$", "{"):
-                map:merge(($functions ! openapi:operation-object(.)))
+                map:merge(($functions ! openapi:operation-object(., $config)))
           }
       ))
   }
@@ -149,12 +149,23 @@ as map(*) {
  : Prepare OAS3 Operation Object.
  : @see https://swagger.io/specification/#operationObject
  :)
-declare %private function openapi:operation-object($function as element(function))
+declare %private function openapi:operation-object($function as element(function), $config as element(openapi:config))
 as map(*) {
-  let $desc := normalize-space($function/description)
+  let $name := $function/@name
+  let $desc := tokenize($function/description, "\n\s\n\s") ! normalize-space(.)
   let $see := normalize-space($function/see)
   let $deprecated := $function/deprecated
-  let $tags := array { $function/@name => substring-before(":") }
+  let $tags := array {
+      if($config/openapi:tags/openapi:tag/openapi:function[@name = $name])
+      then
+        if($config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@method) = "exclusive")
+        then $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag[@method = "exclusive"]/string(@name)
+        else
+            ($name => substring-before(":"),
+            $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@name))
+      else
+        $name => substring-before(":")
+  }
   return
   map:merge((
     for $method in $function/annotation[@name = $openapi:supported-methods]/substring-after(lower-case(@name), "rest:")
@@ -162,7 +173,8 @@ as map(*) {
     map{
       $method:
       map:merge((
-        map{ "description": $desc},
+        map{ "summary": $desc[1]},
+        map{ "description": $desc[2]},
         map{ "tags": $tags},
         $see[1] ! map{"externalDocs": $see ! map{
           "url": .,
@@ -336,7 +348,7 @@ as map(*)? {
   }
 };
 
-declare %private function openapi:tags-object($modules as element(module)+)
+declare %private function openapi:tags-object($modules as element(module)+, $config as element(openapi:config))
 as map(*) {
   map{
     "tags": array{
@@ -345,8 +357,14 @@ as map(*) {
             map{
                 "name": string($module/@prefix),
                 "description": normalize-space($module/description)
+            },
+        for $tag in $config/openapi:tags/openapi:tag
+        return
+            map{
+                "name": string($tag/@name),
+                "description": normalize-space($tag)
             }
-        }
+    }
   }
 };
 
