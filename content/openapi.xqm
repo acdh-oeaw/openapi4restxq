@@ -40,7 +40,7 @@ as map(*) {
     let $test4rest := contains(util:binary-doc($module) => util:base64-decode(), "%rest:")
     where $test4rest
     return
-      inspect:inspect-module($module)
+      inspect:inspect-module($module)[.//annotation[@name = $openapi:supported-methods]]
 
   let $config-uri := $target || "/openapi-config.xml"
   let $config :=  if(doc-available($config-uri))
@@ -129,10 +129,18 @@ as map(*) {
  :)
 declare %private function openapi:paths-object($module as element(module)+)
 as map(*) {
+  let $paths := $module/function/annotation[@name = "rest:path"]/value => distinct-values()
+  return
   map{
     "paths":
       map:merge((
-        $module/function[annotation/@name = "rest:path"] ! openapi:operation-object(.)
+        for $path in $paths
+        let $functions := $module/function[annotation[@name = "rest:path"]/value = $path]
+        return
+          map{
+              $path => replace("\{\$", "{"):
+                map:merge(($functions ! openapi:operation-object(.)))
+          }
       ))
   }
 };
@@ -148,8 +156,7 @@ as map(*) {
   let $deprecated := $function/deprecated
   let $tags := array { $function/@name => substring-before(":") }
   return
-  map{
-    $function/annotation[@name eq "rest:path"]/replace(value, "\{\$", "{") :
+  map:merge((
     for $method in $function/annotation[@name = $openapi:supported-methods]/substring-after(lower-case(@name), "rest:")
     return
     map{
@@ -166,7 +173,7 @@ as map(*) {
         openapi:requestBody-object($function)
       ))
     }
-  }
+  ))
 };
 
 declare %private function openapi:requestBody-object($function as element(function))

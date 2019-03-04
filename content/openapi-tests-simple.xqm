@@ -168,3 +168,68 @@ declare
 %rest:path("/openapi-test/simple/head")
 function openapi-test-simple:head()
 as empty-sequence() {()};
+
+(:~
+ : All Methods Test for OpenAPI
+ : @return empty
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:GET
+%rest:HEAD
+%rest:POST
+%rest:PUT
+%rest:DELETE
+%rest:path("/openapi-test/simple/multi")
+function openapi-test-simple:multi-methods(){
+    ()
+};
+
+(:~
+ : GET Method with a path defined also for a POST in a different function
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+  %rest:GET
+  %rest:path("/openapi-test/simple/multi-function")
+function openapi-test-simple:multi-get()
+as element(test) {
+    <test>
+        <parameters n="0"/>
+        <response n="1" type="application/xml"/>
+    </test>
+};
+
+
+(:~
+ : POST Method with a path defined also for a POST in a different function
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:POST("{$body}")
+%rest:path("/openapi-test/simple/multi-function")
+function openapi-test-simple:multi-post($body)
+as element(test) {
+    <test>
+        <parameters n="0"/>
+        <response n="1" type="application/xml"/>
+    </test>
+};
+
+(:~
+ : POST Method with a path defined also for a POST in a different module
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:POST("{$body}")
+%rest:path("/openapi-test/simple/multi-module")
+function openapi-test-simple:multi-post($body)
+as element(test) {
+    <test>
+        <parameters n="0"/>
+        <response n="1" type="application/xml"/>
+    </test>
+};
