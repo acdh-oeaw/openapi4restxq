@@ -8,6 +8,16 @@
     <type>application</type>
     <target>openapi</target>
     <changelog>
+      <change version="1.4.0">
+        <ul xmlns="http://www.w3.org/1999/xhtml">
+          <li class="feat">Features
+            <ul style="margin-left: 15px;">
+              <li>Support multiple method annotations</li>
+              <li>Support a single path mapped to different functions</li>
+            </ul>
+          </li>
+        </ul>
+      </change>
       <change version="1.3.0">
           <ul xmlns="http://www.w3.org/1999/xhtml">
             <li class="feat">Features
