@@ -55,3 +55,19 @@ as element(test) {
         <response n="1" type="application/json"/>
     </test>
 };
+
+(:~
+ : GET Method with a path defined also for a POST in a different module
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+  %rest:GET
+  %rest:path("/openapi-test/simple/multi-module")
+function openapi-test-full:multi-post()
+as element(test) {
+    <test>
+        <parameters n="0"/>
+        <response n="1" type="application/xml"/>
+    </test>
+};
