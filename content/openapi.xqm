@@ -407,6 +407,6 @@ as xs:string?{
  : @param $name The name of the argument to prepare an example for :)
 declare %private function openapi:example($function as element(function), $name as xs:string)
 as map(*)* {
-    string($function/annotation[@name = "test:arg"][value[1] eq $name]/value[2])
+    string(($function/annotation[@name = "test:arg"][value[1] eq $name])[1]/value[2])
     ! map{ "example": .}
 };
