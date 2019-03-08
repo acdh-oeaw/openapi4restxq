@@ -34,7 +34,7 @@ as xs:string {
  :)
 declare function openapi:main($target as xs:string)
 as map(*) {
-  let $modules-uris := collection($target)[ends-with(base-uri(), ".xqm")]/base-uri()
+  let $modules-uris := collection($target)[openapi:xquery-resource(string(base-uri()))]/base-uri()
   let $module :=
     for $module in $modules-uris
     let $test4rest := contains(util:binary-doc($module) => util:base64-decode(), "%rest:")
@@ -409,4 +409,11 @@ declare %private function openapi:example($function as element(function), $name 
 as map(*)* {
     string(($function/annotation[@name = "test:arg"][value[1] eq $name])[1]/value[2])
     ! map{ "example": .}
+};
+
+declare function openapi:xquery-resource($baseuri as xs:string)
+as xs:boolean {
+     ends-with($baseuri, ".xqm")
+  or ends-with($baseuri, ".xql")
+  or ends-with($baseuri, ".xq")
 };
