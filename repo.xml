@@ -8,9 +8,18 @@
     <type>application</type>
     <target>openapi</target>
     <changelog>
+      <change version="1.5.2">
+        <ul xmlns="http://www.w3.org/1999/xhtml">
+          <li class="bugs">Bugfix
+            <ul style="margin-left: 15px;">
+              <li>omit “null” on description</li>
+            </ul>
+          </li>
+        </ul>
+      </change>
       <change version="1.5.1">
         <ul xmlns="http://www.w3.org/1999/xhtml">
-          <li class="bugs">Bugfixes
+          <li class="bugs">Bugfix
             <ul style="margin-left: 15px;">
               <li>bugfix for string() call with multiple test annotations</li>
             </ul>
