@@ -17,7 +17,7 @@ declare namespace repo="http://exist-db.org/xquery/repo";
 declare %private variable $openapi:supported-methods := ("rest:GET", "rest:HEAD", "rest:POST", "rest:PUT", "rest:DELETE");
 
 (:~
- : Prepares a JSON document usually to be stored as "openapi.json".
+ : Prepares a JSON document conform to OpenAPI 3.0.2, usually to be stored as "openapi.json".
  : @param $target the collection to prepare the descriptor for, e.g. “/db/apps/application”
  :   :)
 declare function openapi:json($target as xs:string)
@@ -174,7 +174,7 @@ as map(*) {
       $method:
       map:merge((
         map{ "summary": $desc[1]},
-        map{ "description": $desc[2]},
+        $desc[2] ! map{ "description": .},
         map{ "tags": $tags},
         $see[1] ! map{"externalDocs": $see ! map{
           "url": .,
