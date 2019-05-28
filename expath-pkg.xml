@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://expath.org/ns/pkg"
-  name="@project.name@"
-  abbrev="@project.abbrev@"
-  version="@project.version@"
+  name="https://lab.sub.uni-goettingen.de/openapi4restxq-develop"
+  abbrev="openapi-develop"
+  version="1.5.2"
   spec="1.0"
   xml:id="restxqopenapi">
-  <title>@project.title@</title>
+  <title>OpenAPI for RESTXQ</title>
   <dependency processor="http://exist-db.org" semver-min="4.0.0"/>
   <xquery>
     <namespace>https://lab.sub.uni-goettingen.de/restxqopenapi</namespace>

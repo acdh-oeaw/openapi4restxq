@@ -7,56 +7,43 @@ optimized to describe standardized communication with HTTP.
 is the implementation of well-known function annotations in [XQuery](https://www.w3.org/TR/xquery-31/).
 
 # OpenAPI for RESTXQ
+This is a BaseX port of the original exist-db version.
+
 This software combines the power of function annotation in XQuery to prepare an
 OpenAPI conform documentation. It covers the RESTXQ annotations as well as the
 [XQSuite](http://exist-db.org/exist/apps/doc/xqsuite.xml) annotations and uses
 [xqDocs](http://xqdoc.org/xqdoc_comments_doc.html) for describing the API.
 
 It is meant to be used for a single [expath package](http://expath.org/spec/pkg)
-and written for [eXist-db](http://exist-db.org).
+and written for [BaseX](http://basex.org).
 
 ## Build
-For preparing the `openapi.json` the application is build with
-```
-ant
-```
+TODO (or nothing)
 
 If you want to use swagger-ui (a ready-to-use documentation in HTML) you have to
 load the swagger-ui package before:
 ```bash
-npm install && ant
+yarn install
 ```
 
 ## Install
-Install the build target (xar package) to a recent eXist-db by either placing
-the file in the `autodeploy` directory or using the package manager application
-installed by default at a running database.
+TODO
 
 ## Use
 ### Integrated in own applications
-By adding the following lines to the `controller.xql` a path like
-[/myApplication/openapi/index.html](http://localhost:8080/exist/apps/myApplication/openapi/index.html)
+By TODO a path like
+[/myApplication/openapi/index.html](http://localhost:8984/myApplication/openapi/index.html)
 will become available. (The usage of the pipe operator requires XQuery version 3.1.)
-```xq
-else if (starts-with($exist:path, "/openapi/")) then
-  <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-    <forward
-      url="/openapi/{ $exist:path => substring-after("/openapi/") => replace("json", "xq") }"
-      method="get">
-      <add-parameter name="target" value="{ substring-after($exist:root, "://") || $exist:controller }"/>
-      <add-parameter name="register" value="false"/>
-    </forward>
-  </dispatch>
-```
+
 
 ### Standalone
 By default the application provides a preview and a few simple REST paths as test
-interfaces. Open the application via the Dashboard or browse to [http://localhost:8080/exist/apps/openapi/index.html](http://localhost:8080/exist/apps/openapi/index.html).
+interfaces. Open the application via the Dashboard or browse to [http://localhost:8984/openapi/index.html](http://localhost:8984/openapi/index.html).
+
+Change the the input filed in the top bar to `openapi.json`.
 
 To view the documentation for other packages, use the input filed in the top bar
-to ask for a description file at `openapi.json?target=/db/apps/myApplication`.
-Optional the re-registration of functions to the RESTXQ engine is possible via
-an additional parameter: `&register=true`.
+to ask for a description file at `openapi.json?target=Q:\BaseX9\webapp\myApplication\`.
 
 ## Configure
 To include information not present in one of the parsed documents, the library
@@ -66,15 +53,11 @@ It is recommended to place a customized copy of the file provided with this
 package.
 
 ## Develop
-To start developing or testing the package a ant target is available that sets
-up the environment.
-```bash
-ant test && bash test/eXist-db-*/bin/startup.sh
-```
+To start developing or testing the package TODO
 
 Behind the curtain the information will be collected by calling
 ```xq
-inspect:inspect-module(xs:anyURI("/db/apps/openapi/content/openapi-tests-full.xqm"))
+inspect:module("/basex/webapp/openapi/content/openapi-tests-full.xqm")
 ```
 
 ## Limitations

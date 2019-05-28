@@ -14,7 +14,7 @@ declare namespace rest="http://exquery.org/ns/restxq";
 declare namespace pkg="http://expath.org/ns/pkg";
 declare namespace repo="http://exist-db.org/xquery/repo";
 
-declare %private variable $openapi:supported-methods := ("rest:GET", "rest:HEAD", "rest:POST", "rest:PUT", "rest:DELETE");
+declare variable $openapi:supported-methods := ("rest:GET", "rest:HEAD", "rest:POST", "rest:PUT", "rest:DELETE");
 
 (:~
  : Prepares a JSON document conform to OpenAPI 3.0.2, usually to be stored as "openapi.json".
@@ -29,23 +29,23 @@ as xs:string {
 (:~
  : Prepare OpenAPI descriptor for an installed package specified by its path in
  : the database.
- : @param $target the collection to prepare the descriptor for, e.g. “/db/apps/application”
+ : @param $target the directory to prepare the descriptor for, e.g. file:base-dir()
  : @return complete OpenAPI description
  :)
 declare function openapi:main($target as xs:string)
 as map(*) {
-  let $modules-uris := collection($target)[openapi:xquery-resource(string(base-uri()))]/base-uri()
+  let $modules-uris := file:list($target, true())[openapi:xquery-resource(.)]!file:resolve-path(., $target)
   let $module :=
     for $module in $modules-uris
-    let $test4rest := contains(util:binary-doc($module) => util:base64-decode(), "%rest:")
+    let $test4rest := contains(file:read-text($module), "%rest:")
     where $test4rest
     return
-      inspect:inspect-module($module)[.//annotation[@name = $openapi:supported-methods]]
+      inspect:module($module)[.//annotation[@name = $openapi:supported-methods]]
 
   let $config-uri := $target || "/openapi-config.xml"
   let $config :=  if(doc-available($config-uri))
                   then doc($config-uri)/*
-                  else doc( replace(system:get-module-load-path(), '^(xmldb:exist://)?(embedded-eXist-server)?(.+)$', '$3') || "/../openapi-config.xml" )/*
+                  else doc(file:base-dir()|| "/../openapi-config.xml" )/*
   let $expath := doc($target || "/expath-pkg.xml")/*
   let $repo := doc($target || "/repo.xml")/*
   return
@@ -62,7 +62,7 @@ as map(*) {
  : Prepare OAS3 Info Object
  : @see https://swagger.io/specification/#infoObject
  :)
-declare %private function openapi:info-object($expath as element(pkg:package), $repo as element(repo:meta), $config as element(openapi:info))
+declare function openapi:info-object($expath as element(pkg:package), $repo as element(repo:meta), $config as element(openapi:info))
 as map(*) {
   map{ "info":
     map{
@@ -80,7 +80,7 @@ as map(*) {
  : Prepare a OAS Contact Object
  : @see https://swagger.io/specification/#contactObject
  :)
-declare %private function openapi:contact-object($repo as element(), $config as element(openapi:contact))
+declare function openapi:contact-object($repo as element(), $config as element(openapi:contact))
 as map(*) {
     map{
         "name": string($repo/repo:author[1]),
@@ -93,7 +93,7 @@ as map(*) {
  : Prepare a OAS License Object
  : @see https://swagger.io/specification/#licenseObject
  :)
-declare %private function openapi:license-object($repo as element(repo:meta))
+declare function openapi:license-object($repo as element(repo:meta))
 as map(*) {
   let $licenseId := string($repo/repo:license)
   let $url := (map:get(openapi:spdx($licenseId), "seeAlso")?*)[1]
@@ -109,7 +109,7 @@ as map(*) {
  : Prepares a OAS3 Servers Object
  : @see https://swagger.io/specification/#serverObject
  :)
-declare %private function openapi:servers-object($config as element(openapi:servers))
+declare function openapi:servers-object($config as element(openapi:servers))
 as map(*) {
   map{
       "servers": array {
@@ -127,15 +127,15 @@ as map(*) {
  : Prepare OAS3 Paths Object.
  : @see https://swagger.io/specification/#pathsObject
  :)
-declare %private function openapi:paths-object($module as element(module)+, $config as element(openapi:config))
+declare function openapi:paths-object($module as element(module)+, $config as element(openapi:config))
 as map(*) {
-  let $paths := $module/function/annotation[@name = "rest:path"]/value => distinct-values()
+  let $paths := $module/function/annotation[@name = "rest:path"]/literal => distinct-values()
   return
   map{
     "paths":
       map:merge((
         for $path in $paths
-        let $functions := $module/function[annotation[@name = "rest:path"]/value = $path]
+        let $functions := $module/function[annotation[@name = "rest:path"]/literal = $path]
         return
           map{
               $path => replace("\{\$", "{"):
@@ -149,7 +149,7 @@ as map(*) {
  : Prepare OAS3 Operation Object.
  : @see https://swagger.io/specification/#operationObject
  :)
-declare %private function openapi:operation-object($function as element(function), $config as element(openapi:config))
+declare function openapi:operation-object($function as element(function), $config as element(openapi:config))
 as map(*) {
   let $name := $function/@name
   let $desc := tokenize($function/description, "\n\s\n\s") ! normalize-space(.)
@@ -188,12 +188,12 @@ as map(*) {
   ))
 };
 
-declare %private function openapi:requestBody-object($function as element(function))
+declare function openapi:requestBody-object($function as element(function))
 as map(*)? {
-if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/value))) then () else
-    let $name := replace($function/annotation[@name = ("rest:POST", "rest:PUT")]/value, "\{|\}|\$", "")
-    let $desc := string($function/argument[@var eq $name])
-    let $example := string(($function/annotation[@name="test:arg"][value[1] eq $name])[1]/value[2])
+if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/literal))) then () else
+    let $name := replace($function/annotation[@name = ("rest:POST", "rest:PUT")]/literal, "\{|\}|\$", "")
+    let $desc := string($function/argument[@name eq $name])
+    let $example := string(($function/annotation[@name="test:arg"][literal[1] eq $name])[1]/literal[2])
     return
     map{
         "requestBody":  map{
@@ -217,13 +217,13 @@ if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/value))) t
  : Prepare OAS3 Responses Object.
  : @see https://swagger.io/specification/#responsesObject
  :  :)
-declare %private function openapi:responses-object($function as element(function))
+declare function openapi:responses-object($function as element(function))
 as map(*){
   map{
     "responses":
     map{
       "200": map{
-        "description": string($function/returns),
+        "description": string($function/return),
         "content": openapi:mediaType-object($function)
       }
     }
@@ -234,7 +234,7 @@ as map(*){
  : Prepare OAS3 Parameter Object.
  : @see https://swagger.io/specification/#parameterObject
  :  :)
-declare %private function openapi:parameter-object($function as element(function))
+declare function openapi:parameter-object($function as element(function))
 as map(*) {
     map{
       "parameters": array{
@@ -251,11 +251,11 @@ as map(*) {
  : @param $function A function element from the inspect module
  : @see https://swagger.io/specification/#parameterObject
  : :)
-declare %private function openapi:parameters-path($function as element(function))
+declare function openapi:parameters-path($function as element(function))
 as map(*)* {
     let $pathParameters :=
         $function/annotation[@name = "rest:path"][1]
-            /tokenize(value, "\{")
+            /tokenize(literal, "\{")
             [starts-with(., "$")]
             ! (.
                 => substring-after("$")
@@ -264,7 +264,7 @@ as map(*)* {
 
     for $parameter in $pathParameters
     let $name := replace($parameter, "\{|\$|\}", "")
-    let $argument := $function/argument[@var eq $name]
+    let $argument := $function/argument[@name eq $name]
     let $basics := map:merge((
                 map{
                     "name": $name,
@@ -272,7 +272,7 @@ as map(*)* {
                     "required": true()},
                     openapi:schema-object($argument)
     ))
-    let $description := $function/argument[@var = $name]/text() ! map{ "description": .}
+    let $description := $function/argument[@name = $name]/text() ! map{ "description": .}
     let $example := openapi:example($function, $name)
     return
         map:merge(($basics, $description, $example))
@@ -284,16 +284,16 @@ as map(*)* {
  : @param $function A function element from the inspect module
  : @see https://swagger.io/specification/#parameterObject
  : :)
-declare %private function openapi:parameters($function as element(function), $source as xs:string)
+declare function openapi:parameters($function as element(function), $source as xs:string)
 as map(*)* {
     let $parameters := $function/annotation[@name = "rest:" || $source || "-param"]
     for $annotation in $parameters
-        let $varName := string($annotation/value[2]) => replace("\{|\$|\}", "")
-        let $name := string($annotation/value[1])
-        let $argument := $function/argument[@var eq $varName]
+        let $varName := string($annotation/literal[2]) => replace("\{|\$|\}", "")
+        let $name := string($annotation/literal[1])
+        let $argument := $function/argument[@name eq $varName]
         let $required :=
             (: when a default value is present and the cardinality is not ? or * :)
-            exists($annotation/value[3]) and not(contains($argument/@cardinality, "zero"))
+            exists($annotation/literal[3]) and not(contains($argument/@cardinality, "zero"))
         let $basics :=
                 map:merge((
                     map{
@@ -313,7 +313,7 @@ as map(*)* {
  : Prepare OAS3 Media Type Object.
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare %private function openapi:mediaType-object($function)
+declare function openapi:mediaType-object($function)
 as map(*) {
   let $produces := (
         string($function/annotation[@name="rest:produces"]),
@@ -323,7 +323,7 @@ as map(*) {
       )
   return
     map{
-      $produces[. != ""][1]: openapi:schema-object($function/returns)
+      $produces[. != ""][1]: openapi:schema-object($function/return)
     }
 };
 
@@ -333,7 +333,7 @@ as map(*) {
  : either *:returns or *:argument
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare %private function openapi:schema-object($returns as element(*))
+declare function openapi:schema-object($returns as element(*))
 as map(*)? {
   map{ "schema":
     map:merge((
@@ -341,14 +341,14 @@ as map(*)? {
           "type": "string",
           "x-xml-type": string($returns/@type)
         },
-        if(contains($returns/@cardinality, "zero"))
+        if($returns/@occurrence = ("*", "?"))
         then map{ "nullable": true() }
         else ()
     ))
   }
 };
 
-declare %private function openapi:tags-object($modules as element(module)+, $config as element(openapi:config))
+declare function openapi:tags-object($modules as element(module)+, $config as element(openapi:config))
 as map(*) {
   map{
     "tags": array{
@@ -375,7 +375,7 @@ as map(*) {
  :)
 declare function openapi:spdx($licenseId as xs:string)
 as map(*) {
-let $collection-uri := /id("restxqopenapi")/base-uri()
+let $collection-uri := file:base-dir() (: /id("restxqopenapi")/base-uri() :)
 let $item :=
  (($collection-uri || "/../spdx-licenses.json")
   => json-doc())("licenses")?*[?licenseId = $licenseId]
@@ -389,7 +389,7 @@ return
  : @param $method One of the specified methods
  : @see https://www.w3.org/TR/xslt-xquery-serialization/
  :  :)
-declare %private function openapi:method-mediaType($method as xs:string?)
+declare function openapi:method-mediaType($method as xs:string?)
 as xs:string?{
     switch ($method)
         case "html" return "text/html"
@@ -405,9 +405,9 @@ as xs:string?{
  : Prepare an example value based on XQSuite annotation
  : @param $function A function element from inspect module
  : @param $name The name of the argument to prepare an example for :)
-declare %private function openapi:example($function as element(function), $name as xs:string)
+declare function openapi:example($function as element(function), $name as xs:string)
 as map(*)* {
-    string(($function/annotation[@name = "test:arg"][value[1] eq $name])[1]/value[2])
+    string(($function/annotation[@name = "test:arg"][literal[1] eq $name])[1]/literal[2])
     ! map{ "example": .}
 };
 
