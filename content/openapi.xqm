@@ -54,7 +54,9 @@ as map(*) {
     openapi:paths-object($module, $config),
     openapi:servers-object($config/openapi:servers),
     openapi:info-object($expath, $repo, $config/openapi:info),
-    openapi:tags-object($module, $config)
+    openapi:tags-object($module, $config),
+    openapi:components-object($config),
+    openapi:security-requirement-object($config)
     ))
 };
 
@@ -152,8 +154,8 @@ as map(*) {
 declare function openapi:operation-object($function as element(function), $config as element(openapi:config))
 as map(*) {
   let $name := $function/@name
-  let $desc := tokenize($function/description, "\n\s\n\s") ! normalize-space(.)
-  let $see := normalize-space($function/see)
+  let $desc := tokenize($function/description, "\n\s?\n\s?") ! normalize-space(.)
+  let $see := $function/see
   let $deprecated := $function/deprecated
   let $tags := array {
       if($config/openapi:tags/openapi:tag/openapi:function[@name = $name])
@@ -177,7 +179,7 @@ as map(*) {
         $desc[2] ! map{ "description": .},
         map{ "tags": $tags},
         $see[1] ! map{"externalDocs": $see ! map{
-          "url": .,
+          "url": normalize-space(.),
           "description": "the official documentation by the maintainer or a thrid-party documentation"}},
         $deprecated ! map{"deprecated": true()},
         openapi:parameter-object($function),
@@ -292,8 +294,8 @@ as map(*)* {
         let $name := string($annotation/literal[1])
         let $argument := $function/argument[@name eq $varName]
         let $required :=
-            (: when a default value is present and the cardinality is not ? or * :)
-            exists($annotation/literal[3]) and not(contains($argument/@cardinality, "zero"))
+            (: not required when either a default value is present or the occurrence is ? or * :)
+            not(exists($annotation/literal[3]) or $argument/@occurrence = ("?", "*"))
         let $basics :=
                 map:merge((
                     map{
@@ -316,15 +318,19 @@ as map(*)* {
 declare function openapi:mediaType-object($function)
 as map(*) {
   let $produces := (
-        string($function/annotation[@name="rest:produces"]),
+        string($function/annotation[@name="rest:produces"][1]),
         string($function/annotation[@name="output:media-type"]),
         string($function/annotation[@name="output:method"]/openapi:method-mediaType(string(.))),
         "application/xml"
       )
   return
+      map:merge((
     map{
       $produces[. != ""][1]: openapi:schema-object($function/return)
-    }
+      },
+      subsequence($function/annotation[@name="rest:produces"], 2) ! map {
+        string(.): openapi:schema-object($function/return)
+      }))
 };
 
 (:~
@@ -365,6 +371,62 @@ as map(*) {
                 "description": normalize-space($tag)
             }
     }
+  }
+};
+
+(:~
+ : Create the components part of the openapi spec.
+ : Stub: only reads basic http security scheme
+ : @see https://swagger.io/specification/#componentsObject 
+ :)
+declare function openapi:components-object($config as element(openapi:config))
+as map(*) {
+  map {
+    "components": map:merge((
+      $config/openapi:components/openapi:schemas[1] ! map {
+        "schemas": ""
+      },
+      $config/openapi:components/openapi:parameters[1] ! map {
+        "parameters": ""
+      },
+      $config/openapi:components/openapi:responses[1] ! map {
+        "responses": ""
+      },
+      $config/openapi:components/openapi:securitySchemes[1] ! map {
+        "securitySchemes": openapi:security-scheme-object(.)
+      }
+    ))
+  }
+};
+
+declare function openapi:security-scheme-object($securitySchemes as element(openapi:securitySchemes))
+as map(*) {
+  map:merge((
+  $securitySchemes/openapi:securityScheme ! map {
+    string(./@name): map:merge(( map {
+      'description': normalize-space(./text()),
+      'type': string(./openapi:type)
+    },
+    ./openapi:scheme[1] ! map {
+      'scheme': string(.)
+    }
+    ))
+  }))
+};
+
+(:~
+ : Create the components part of the openapi spec.
+ : Stub: only reads basic http security scheme
+ : @see https://swagger.io/specification/#securityRequirementObject
+ :)
+declare function openapi:security-requirement-object($config as element(openapi:config))
+as map(*)? {
+  $config/openapi:security[1] ! map {
+    "security": map:merge((
+    ./openapi:SecurityRequirement ! map {
+      string(./@name): [(: list of scope names for "oauth2" or "openIdConnect" :)]
+    }
+  ))
   }
 };
 
