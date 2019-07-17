@@ -12,8 +12,10 @@ build-develop:
   tags:
       - BaseX-9.2
   variables:
-     GIT_CLONE_PATH: /opt/basex/webapp
+     GIT_CLONE_PATH: $CI_BUILDS_DIR/openapi4restxq
   script:
+    - pwd
+    - cd $GIT_CLONE_PATH
     - yarn install
 #    - ant test
 #  artifacts:
@@ -42,8 +44,9 @@ installation:
   tags:
       - BaseX-9.2
   variables:
-     GIT_CLONE_PATH: /opt/basex/webapp
+     GIT_CLONE_PATH: $CI_BUILDS_DIR/openapi4restxq
   script:
+    - cd $GIT_CLONE_PATH
     - yarn install
   artifacts:
     paths:
