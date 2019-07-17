@@ -10,7 +10,7 @@ build-develop:
       - tags
   stage: build
   tags:
-      - BaseX-9.9
+      - BaseX-9.2
   variables:
      GIT_CLONE_PATH: /opt/basex/webapp
   script:
@@ -40,7 +40,7 @@ installation:
       - tags
   stage: build
   tags:
-      - BaseX-9.9
+      - BaseX-9.2
   variables:
      GIT_CLONE_PATH: /opt/basex/webapp
   script:
