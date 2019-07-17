@@ -1,25 +1,26 @@
-# Needs to be adapted to BaseX
-#
-#image: docker.gitlab.gwdg.de/subugoe/openapi4restxq:latest
-#
-#stages:
-#  - build
-#  - test
+
+stages:
+  - build
+  - test
 #  - deploy
-#
-#build-develop:
-#  except:
-#      - master
-#      - tags
-#  stage: build
-#  script:
-#    - npm install
+
+build-develop:
+  except:
+      - master
+      - tags
+  stage: build
+  tags:
+      - BaseX-9.9
+  variables:
+     GIT_CLONE_PATH: /opt/basex/webapp
+  script:
+    - yarn install
 #    - ant test
 #  artifacts:
 #    paths:
 #      - build/*.xar
 #      - test/
-#
+
 #build-master:
 #  only:
 #      - master
@@ -33,25 +34,21 @@
 #      - build/*.xar
 #      - test/
 #
-#installation:
-#  except:
-#      - tags
-#  stage: test
-#  script:
-#    - bash test/eXist-db-*/bin/startup.sh | tee output.log &
-#    # wait for eXist
-#    - while [ $(curl --head --silent http://localhost:8080 | grep -c "200 OK") == 0 ]; do sleep 2s; done
-#    # shutdown eXist
-#    - bash test/eXist-db-*/bin/shutdown.sh
-#    - ls -al /tmp; mv /tmp/tests-* . || true
-#  artifacts:
-#    paths:
-#      - output.log
-#      - test/tests-*.xml
-#      - test/eXist-db-*/webapp/WEB-INF/logs/expath-repo.log
-#    reports:
-#        junit: test/tests-*.xml
-#
+installation:
+  except:
+      - master
+      - tags
+  stage: build
+  tags:
+      - BaseX-9.9
+  variables:
+     GIT_CLONE_PATH: /opt/basex/webapp
+  script:
+    - yarn install
+  artifacts:
+    paths:
+      - /opt/basex/webapp/openapi4restxq
+
 #upload:
 #  only:
 #      - master
