@@ -58,14 +58,13 @@ installation:
       +        url: "openapi.json",
                dom_id: '#swagger-ui',
       EOF
-    - cd $CI_BUILDS_DIR
     - mkdir screenshots
     - cd screenshots
     - chromium-browser --headless --disable-gpu --no-sandbox --screenshot --window-size=1280,1696 --virtual-time-budget=10000 http://localhost:8984/openapi
     - mv screenshot.png openapi4restxq.png
   artifacts:
     paths:
-      - $CI_BUILDS_DIR/screenshots
+      - $GIT_CLONE_PATH/screenshots
 
 #upload:
 #  only:
