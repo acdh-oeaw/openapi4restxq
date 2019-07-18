@@ -48,9 +48,24 @@ installation:
   script:
     - cd $GIT_CLONE_PATH
     - yarn install
+    - |
+    patch <<EOF
+    --- resources/swagger-ui-dist/index.html        2019-05-28 16:35:33.341000000 +0200
+    +++ index.html  2019-05-28 17:48:45.573077200 +0200
+    @@ -41,3 +41,3 @@
+           const ui = SwaggerUIBundle({
+    -        url: "https://petstore.swagger.io/v2/swagger.json",
+    +        url: "openapi.json",
+             dom_id: '#swagger-ui',
+    EOF
+    - cd $CI_BUILDS_DIR
+    - mkdir screenshots
+    - cd screenshots
+    - chromium-browser --headless --disable-gpu --no-sandbox --screenshot --window-size=1280,1696 --virtual-time-budget=10000 http://localhost:8984/openapi
+    - mv screenshot.png openapi4restxq.png
   artifacts:
     paths:
-      - /opt/basex/webapp/openapi4restxq
+      - $CI_BUILDS_DIR/screenshots
 
 #upload:
 #  only:
