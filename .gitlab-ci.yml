@@ -69,13 +69,17 @@ installation:
        xmldb:remove('/db/xars-to-deploy')
       )
       "
+    - mkdir screenshots-actual
+    - mkdir screenshots-diff
+    - cd screenshots-actual
+    - chromium-browser --headless --disable-gpu --no-sandbox --screenshot --window-size=1280,1696 --virtual-time-budget=10000 http://localhost:8080/exist/apps/openapi
+    - mv screenshot.png openapi4restxq.png
+    - diffpng --output ../screenshots-diff/openapi4restxq openapi4restxq.png ../screenshots/openapi4restxq.png
+
   artifacts:
     paths:
-      - test/tests-*.xml
-      - test/eXist-db-*/webapp/WEB-INF/logs/expath-repo.log
-    reports:
-        junit: test/tests-*.xml
-
+      - screenshots-actual
+      - screenshots-diff
 #upload:
 #  only:
 #      - master-acdh
