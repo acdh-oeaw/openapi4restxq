@@ -77,6 +77,8 @@ installation:
     - diffpng --output ../screenshots-diff/openapi4restxq openapi4restxq.png ../screenshots/openapi4restxq.png
 
   artifacts:
+    when: on_failure
+    expire_in: 1 day
     paths:
       - screenshots-actual
       - screenshots-diff
