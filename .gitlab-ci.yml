@@ -40,7 +40,7 @@ installation:
   except:
       - master
       - tags
-  stage: build
+  stage: test
   tags:
       - BaseX-9.2
   variables:
@@ -58,10 +58,11 @@ installation:
       +        url: "openapi.json",
                dom_id: '#swagger-ui',
       EOF
-    - mkdir screenshots
-    - cd screenshots
+    - mkdir screenshots-actual
+    - cd screenshots-actual
     - chromium-browser --headless --disable-gpu --no-sandbox --screenshot --window-size=1280,1696 --virtual-time-budget=10000 http://localhost:8984/openapi
     - mv screenshot.png openapi4restxq.png
+    - diffpng openapi4restxq.png ../screenshots/openapi4restxq.png
   artifacts:
     paths:
       - $GIT_CLONE_PATH/screenshots
