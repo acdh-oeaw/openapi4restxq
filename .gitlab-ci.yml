@@ -12,6 +12,7 @@ build-develop:
   tags:
       - BaseX-9.2
   variables:
+     GIT_STRATEGY: clone
      GIT_CLONE_PATH: $CI_BUILDS_DIR/openapi4restxq
   script:
     - pwd
@@ -76,9 +77,8 @@ clean-testbench:
   variables:
      GIT_CLONE_PATH: $CI_BUILDS_DIR/openapi4restxq
   script:
-      - '# Just cleaning up'
-  after_script:
       - rm -rf $GIT_CLONE_PATH*
+      - mkdir -p $GIT_CLONE_PATH
 #upload:
 #  only:
 #      - master
