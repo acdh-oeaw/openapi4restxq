@@ -37,7 +37,7 @@ build-master:
   artifacts:
     paths:
       - build/*.xar
-      - test/
+#      - test/ contains only an exist-db 4.6.1
 
 installation:
   tags:
@@ -50,6 +50,7 @@ installation:
      HOME: /home/gitlab-runner
   script:
     - '# check for exist (it is already running)'
+    - ls -al
     - while [ $(curl --head --silent http://localhost:8080 | grep -c "200 OK") == 0 ]; do sleep 2s; done
     - ls -al /tmp; mv /tmp/tests-* . || true
   artifacts:
