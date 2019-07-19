@@ -1,13 +1,13 @@
-image: docker.gitlab.gwdg.de/subugoe/openapi4restxq:latest
-
 stages:
   - build
   - test
-  - deploy
+#  - deploy
 
 build-develop:
+  tags:
+      - existdb4x
   except:
-      - master
+      - master-acdh
       - tags
   stage: build
   script:
@@ -19,8 +19,10 @@ build-develop:
       - test/
 
 build-master:
+  tags:
+      - existdb4x
   only:
-      - master
+      - master-acdh
   stage: build
   script:
     - cp master.build.properties local.build.properties
@@ -32,31 +34,29 @@ build-master:
       - test/
 
 installation:
+  tags:
+      - existdb4x
   except:
       - tags
   stage: test
   script:
-    - bash test/eXist-db-*/bin/startup.sh | tee output.log &
-    # wait for eXist
+    - '# check for exist (it is already running)'
     - while [ $(curl --head --silent http://localhost:8080 | grep -c "200 OK") == 0 ]; do sleep 2s; done
-    # shutdown eXist
-    - bash test/eXist-db-*/bin/shutdown.sh
     - ls -al /tmp; mv /tmp/tests-* . || true
   artifacts:
     paths:
-      - output.log
       - test/tests-*.xml
       - test/eXist-db-*/webapp/WEB-INF/logs/expath-repo.log
     reports:
         junit: test/tests-*.xml
 
-upload:
-  only:
-      - master
-      - develop
-  except:
-      - tags
-  stage: deploy
-  script:
-    - FILENAME=$(ls build/*.xar)
-    - curl -u ci:${EXIST_UPLOAD_PW} -X POST -F file=@${FILENAME} https://ci.de.dariah.eu/exist-upload
+#upload:
+#  only:
+#      - master-acdh
+#      - develop
+#  except:
+#      - tags
+#  stage: deploy
+#  script:
+#    - FILENAME=$(ls build/*.xar)
+#    - curl -u ci:${EXIST_UPLOAD_PW} -X POST -F file=@${FILENAME} https://ci.de.dariah.eu/exist-upload
