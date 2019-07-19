@@ -62,10 +62,10 @@ installation:
       xmldb:store-files-from-pattern('/db/xars-to-deploy', '$GIT_CLONE_PATH/build', '*.xar', 'application/octet-stream'))[2]
       return (
         try {
-         repo:undeploy('https://lab.sub.uni-goettingen.de/restxqopenapi'),
-         repo:remove('https://lab.sub.uni-goettingen.de/restxqopenapi')
-        } catch * {()},
-       repo:install-and-deploy-from-db(\$app, 'https://lab.sub.uni-goettingen.de/restxqopenapi'),
+         repo:undeploy('https://lab.sub.uni-goettingen.de/openapi4restxq'),
+         repo:remove('https://lab.sub.uni-goettingen.de/openapi4restxq')
+        } catch * {concat('Could not uninstall: ',$err:additional)},
+       repo:install-and-deploy-from-db(\$app, 'https://lab.sub.uni-goettingen.de/openapi4restxq'),
        xmldb:remove('/db/xars-to-deploy')
       )
       "
@@ -92,3 +92,19 @@ installation:
 #  script:
 #    - FILENAME=$(ls build/*.xar)
 #    - curl -u ci:${EXIST_UPLOAD_PW} -X POST -F file=@${FILENAME} https://ci.de.dariah.eu/exist-upload
+clean-testbench:
+  stage: deploy
+  tags:
+      - existdb4x
+  script:
+    - |
+      # Install the xar from build/
+      client.sh -s -u admin -P $EXIST_PASSWORD -x "
+      xquery version '3.1';
+      import module namespace repo='http://exist-db.org/xquery/repo';
+        try {
+         repo:undeploy('https://lab.sub.uni-goettingen.de/openapi4restxq'),
+         repo:remove('https://lab.sub.uni-goettingen.de/openapi4restxq'),
+          'Uninstalled test data.'
+        } catch * {concat('Could not uninstall: ',$err:additional)}
+      "
