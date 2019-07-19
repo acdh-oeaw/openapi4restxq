@@ -59,13 +59,15 @@ installation:
                dom_id: '#swagger-ui',
       EOF
     - mkdir screenshots-actual
+    - mkdir screenshots-diff
     - cd screenshots-actual
     - chromium-browser --headless --disable-gpu --no-sandbox --screenshot --window-size=1280,1696 --virtual-time-budget=10000 http://localhost:8984/openapi
     - mv screenshot.png openapi4restxq.png
-    - diffpng openapi4restxq.png ../screenshots/openapi4restxq.png
+    - diffpng --output ../screenshots-diff/openapi4restxq openapi4restxq.png ../screenshots/openapi4restxq.png
   artifacts:
     paths:
       - $GIT_CLONE_PATH/screenshots-actual
+      - $GIT_CLONE_PATH/screenshots-diff
 
 clean-testbench:
   stage: deploy
@@ -73,7 +75,7 @@ clean-testbench:
       - BaseX-9.2
   variables:
      GIT_CLONE_PATH: $CI_BUILDS_DIR/openapi4restxq
-  script:
+  after_script:
       - rm -rf $GIT_CLONE_PATH*
 #upload:
 #  only:
