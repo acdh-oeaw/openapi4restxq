@@ -2,7 +2,7 @@
 stages:
   - build
   - test
-#  - deploy
+  - deploy
 
 build-develop:
   except:
@@ -65,8 +65,16 @@ installation:
     - diffpng openapi4restxq.png ../screenshots/openapi4restxq.png
   artifacts:
     paths:
-      - $GIT_CLONE_PATH/screenshots
+      - $GIT_CLONE_PATH/screenshots-actual
 
+clean-testbench:
+  stage: deploy
+  tags:
+      - BaseX-9.2
+  variables:
+     GIT_CLONE_PATH: $CI_BUILDS_DIR/openapi4restxq
+  script:
+      - rm -rf $GIT_CLONE_PATH*
 #upload:
 #  only:
 #      - master
