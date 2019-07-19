@@ -50,9 +50,23 @@ installation:
      HOME: /home/gitlab-runner
   script:
     - '# check for exist (it is already running)'
-    - ls -al
     - while [ $(curl --head --silent http://localhost:8080 | grep -c "200 OK") == 0 ]; do sleep 2s; done
-    - ls -al /tmp; mv /tmp/tests-* . || true
+    - |
+      # Install the xar from build/
+      client.sh -s -u admin -P $EXIST_PASSWORD -x "
+      xquery version '3.1';
+      import module namespace repo='http://exist-db.org/xquery/repo';  
+      let $app := (xmldb:create-collection('/db', 'xars-to-deploy'),
+      xmldb:store-files-from-pattern('/db/xars-to-deploy', '/home/gitlab-runner/builds/HZdmztuT/0/acdh-oeaw/openapi4restxq/build', '*.xar', 'application/octet-stream'))[2]
+      return (
+        try {
+         repo:undeploy('https://lab.sub.uni-goettingen.de/restxqopenapi'),
+         repo:remove('https://lab.sub.uni-goettingen.de/restxqopenapi')
+        } catch * {()},
+       repo:install-and-deploy-from-db($app, 'https://lab.sub.uni-goettingen.de/restxqopenapi'),
+       xmldb:remove('/db/xars-to-deploy')
+      )
+      "
   artifacts:
     paths:
       - test/tests-*.xml
