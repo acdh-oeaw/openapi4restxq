@@ -37,7 +37,6 @@ build-master:
   artifacts:
     paths:
       - build/*.xar
-#      - test/ contains only an exist-db 4.6.1
 
 installation:
   tags:
@@ -64,7 +63,7 @@ installation:
         try {
          repo:undeploy('https://lab.sub.uni-goettingen.de/openapi4restxq'),
          repo:remove('https://lab.sub.uni-goettingen.de/openapi4restxq')
-        } catch * {concat('Could not uninstall: ',$err:additional)},
+        } catch * {concat('Could not uninstall: ',\$err:description)},
        repo:install-and-deploy-from-db(\$app, 'https://lab.sub.uni-goettingen.de/openapi4restxq'),
        xmldb:remove('/db/xars-to-deploy')
       )
@@ -106,5 +105,5 @@ clean-testbench:
          repo:undeploy('https://lab.sub.uni-goettingen.de/openapi4restxq'),
          repo:remove('https://lab.sub.uni-goettingen.de/openapi4restxq'),
           'Uninstalled test data.'
-        } catch * {concat('Could not uninstall: ',$err:additional)}
+        } catch * {concat('Could not uninstall: ',\$err:description)}
       "
