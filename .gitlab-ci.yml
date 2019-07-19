@@ -56,14 +56,14 @@ installation:
       client.sh -s -u admin -P $EXIST_PASSWORD -x "
       xquery version '3.1';
       import module namespace repo='http://exist-db.org/xquery/repo';  
-      let $app := (xmldb:create-collection('/db', 'xars-to-deploy'),
-      xmldb:store-files-from-pattern('/db/xars-to-deploy', '/home/gitlab-runner/builds/HZdmztuT/0/acdh-oeaw/openapi4restxq/build', '*.xar', 'application/octet-stream'))[2]
+      let \$app := (xmldb:create-collection('/db', 'xars-to-deploy'),
+      xmldb:store-files-from-pattern('/db/xars-to-deploy', '$GIT_CLONE_PATH/build', '*.xar', 'application/octet-stream'))[2]
       return (
         try {
          repo:undeploy('https://lab.sub.uni-goettingen.de/restxqopenapi'),
          repo:remove('https://lab.sub.uni-goettingen.de/restxqopenapi')
         } catch * {()},
-       repo:install-and-deploy-from-db($app, 'https://lab.sub.uni-goettingen.de/restxqopenapi'),
+       repo:install-and-deploy-from-db(\$app, 'https://lab.sub.uni-goettingen.de/restxqopenapi'),
        xmldb:remove('/db/xars-to-deploy')
       )
       "
