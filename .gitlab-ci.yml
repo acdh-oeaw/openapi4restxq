@@ -10,6 +10,9 @@ build-develop:
       - master-acdh
       - tags
   stage: build
+  variables:
+     GIT_STRATEGY: clone
+     HOME: /home/gitlab-runner
   script:
     - npm install
     - ant test
@@ -24,6 +27,9 @@ build-master:
   only:
       - master-acdh
   stage: build
+  variables:
+     GIT_STRATEGY: clone
+     HOME: /home/gitlab-runner
   script:
     - cp master.build.properties local.build.properties
     - npm install
@@ -39,6 +45,9 @@ installation:
   except:
       - tags
   stage: test
+  variables:
+     GIT_STRATEGY: fetch
+     HOME: /home/gitlab-runner
   script:
     - '# check for exist (it is already running)'
     - while [ $(curl --head --silent http://localhost:8080 | grep -c "200 OK") == 0 ]; do sleep 2s; done
