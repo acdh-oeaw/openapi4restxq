@@ -51,6 +51,8 @@ installation:
   script:
     - '# check for exist (it is already running)'
     - while [ $(curl --head --silent http://localhost:8080 | grep -c "200 OK") == 0 ]; do sleep 2s; done
+    - GIT_CLONE_PATH=$(pwd)
+    - echo $CI_BUILDS_DIR => $GIT_CLONE_PATH
     - |
       # Install the xar from build/
       client.sh -s -u admin -P $EXIST_PASSWORD -x "

@@ -57,13 +57,7 @@ Run `npm install` first to build a package that includes swagger-ui.</echo>
   </target>
 
   <target name="test" depends="antversion-test, xar">
-    <!-- task setpermissions requries at least ant 1.10.0 -->
-    <get src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2" dest="${build.dir}/eXist-db-${project.processorversion}.tar.bz2" skipexisting="true" />
-    <untar src="${build.dir}/eXist-db-${project.processorversion}.tar.bz2" dest="${test.dir}" compression="bzip2" />
-    <setpermissions mode="755">
-      <file file="${test.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
-    </setpermissions>
-    <copy file="${destfile}" todir="${test.dir}/eXist-db-${project.processorversion}/autodeploy" />
+    <copy file="${destfile}" todir="${test.dir}/autodeploy" />
   </target>
 
 </project>
