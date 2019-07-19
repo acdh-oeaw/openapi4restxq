@@ -96,10 +96,9 @@ as element(test) {
  : Simple but deprecated GET Method Test for OpenAPI
  : @return xml fragment that describes request and response
  : @see http://example.com/documentation/about/this
- : @deprecated
  :)
 declare
-%rest:GET
+%rest:GETX
 %rest:path("/openapi-test/simple/get-deprecated")
 function openapi-test-simple:get-deprecated()
 as element(test) {
