@@ -43,8 +43,18 @@ function openapi-test-full:post(
     $format as xs:string,
     $getParam as xs:string+,
     $body as item()*)
-as element(test) {
-    <test>
+as map(*) {
+   map {'parameters': map {
+          'path': $paramPath,
+          'int': $int,
+          'get1': $getParam,
+          'body': $body
+        },        
+        'response': map {
+          'type': 'application/json',
+          'n': 1
+        },
+        'xml': <test>
         <parameters n="6">
             <path>{ $paramPath }</path>
             <int>{ $int }</int>
@@ -54,6 +64,7 @@ as element(test) {
         </parameters>
         <response n="1" type="application/json"/>
     </test>
+   }
 };
 
 (:~
