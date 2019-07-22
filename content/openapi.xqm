@@ -196,10 +196,11 @@ if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/literal)))
     let $name := replace($function/annotation[@name = ("rest:POST", "rest:PUT")]/literal, "\{|\}|\$", "")
     let $desc := string($function/argument[@name eq $name])
     let $example := string(($function/annotation[@name="test:arg"][literal[1] eq $name])[1]/literal[2])
+    let $example := try {parse-json($example)} catch * {$example}
     return
     map{
         "requestBody":  map{
-            "description": "Value to process as variable: $" || $name,
+            "description": $desc||" Processed as variable: $" || $name,
             "content": map{
                 "application/xml": map{
                     "examples": map{
@@ -325,8 +326,8 @@ as map(*) {
       )
   return
       map:merge((
-    map{
-      $produces[. != ""][1]: openapi:schema-object($function/return)
+      map{
+        $produces[. != ""][1]: openapi:schema-object($function/return)
       },
       subsequence($function/annotation[@name="rest:produces"], 2) ! map {
         string(.): openapi:schema-object($function/return)
@@ -422,11 +423,11 @@ as map(*) {
 declare function openapi:security-requirement-object($config as element(openapi:config))
 as map(*)? {
   $config/openapi:security[1] ! map {
-    "security": map:merge((
+    "security": array {(
     ./openapi:SecurityRequirement ! map {
       string(./@name): [(: list of scope names for "oauth2" or "openIdConnect" :)]
     }
-  ))
+  )}
   }
 };
 
@@ -478,4 +479,17 @@ as xs:boolean {
      ends-with($baseuri, ".xqm")
   or ends-with($baseuri, ".xql")
   or ends-with($baseuri, ".xq")
+};
+
+declare function openapi:to-openapi-xml-schema($xml as node()) as map(*) {
+    let $child-elements := for $child-element in $xml/(element(), @*)
+                           return map{$child-element/local-name(): openapi:to-openapi-xml-schema($child-element)},
+        $child-texts := for $child-text in $xml/(text()) return openapi:to-openapi-xml-schema($child-text)
+    return map:merge((
+        map {
+        'type': if (exists($child-elements)) then 'object' else 'string' (: lots of castable as ... :),
+        'xml': map:merge((map {'name': $xml/local-name()}, if ($xml instance of attribute()) then map {'attribute': 'true'} else ()))
+        },
+        if (exists($child-elements)) then map {'properties': map:merge($child-elements)} else (),
+        if (exists($child-texts) or $xml instance of attribute()) then map {'example': xs:string($xml)} else ()))
 };
