@@ -170,6 +170,17 @@ function openapi-test-simple:head()
 as empty-sequence() {()};
 
 (:~
+ : Simple PATCH Method Test for OpenAPI
+ : @return empty as defined by HTTP
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:method('PATCH')
+%rest:path("/openapi-test/simple/patch")
+function openapi-test-simple:patch()
+as empty-sequence() {()};
+
+(:~
  : All Methods Test for OpenAPI
  : @return empty
  : @see http://example.com/documentation/about/this
@@ -214,6 +225,24 @@ function openapi-test-simple:multi-post($body)
 as element(test) {
     <test>
         <parameters n="0"/>
+        <response n="1" type="application/xml"/>
+    </test>
+};
+
+(:~
+ : PATCH Method with a body
+ : @return xml fragment that describes request and response
+ : @see http://example.com/documentation/about/this
+ :)
+declare
+%rest:method("PATCH", "{$body}")
+%rest:path("/openapi-test/simple/patch-body")
+function openapi-test-simple:patch($body)
+as element(test) {
+    <test>
+        <parameters n="1">
+          <body>{ $body }</body>
+        </parameters>
         <response n="1" type="application/xml"/>
     </test>
 };
