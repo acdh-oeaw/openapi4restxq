@@ -107,12 +107,13 @@ You need some info XML files:
 
 * You can either put the contents of this repository in your RESTXQ directory and have the swagger-ui ready
   and load `openapi.xqm` from `openapi4restxq/content/openapi.xqm`
-* or you copy `openapi.xqm` for example into `3rd-party/openapi.xqm`
+* or you copy `content/openapi.xqm`, `openapi-config.xml` and `spdx-licenses.json` for example into `3rd-party/openapi`.
+  These files represent the XQuery code and some default configuration needed.
 
-You then add a invocation like this (adjust the `at "3rd-party/openapi.xqm"` if you don't copy `openapi.xqm`)
+You then add a invocation like this (adjust the `at "3rd-party/content/openapi.xqm"` if you don't copy `openapi.xqm`)
 
 ```xq
-import module namespace openapi="https://lab.sub.uni-goettingen.de/restxqopenapi" at "3rd-party/openapi.xqm";
+import module namespace openapi="https://lab.sub.uni-goettingen.de/restxqopenapi" at "3rd-party/content/openapi.xqm";
 [...]
 declare
     %rest:path('/yourrestproject/openapi.json')
