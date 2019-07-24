@@ -178,7 +178,7 @@ as map(*) {
     map{
       $methodName:
       map:merge((
-        map{ "summary": $desc[1]},
+        map{ "summary": if (normalize-space($desc[1]) ne '') then $desc[1] else "Undocumented!"},
         $desc[2] ! map{ "description": .},
         map{ "tags": $tags},
         $see[1] ! map{"externalDocs": $see ! map{
@@ -348,7 +348,7 @@ as map(*)? {
       let $root-element-name-from-type := replace(data($returns_or_argument/@type)[matches(., 'element\((.*)\)')], 'element\((.*)\)', '$1')
       let $root-element-name-from-example := try { local-name(parse-xml-fragment($example)/*) } catch * {()}
       let $root-element-name := ($root-element-name-from-type, $root-element-name-from-example, 'no-tag-name')[. != ""][1]
-      return openapi:to-openapi-xml-schema(parse-xml-fragment($example))('properties')($root-element-name)
+      return try { openapi:to-openapi-xml-schema(parse-xml-fragment($example))('properties')($root-element-name)} catch * {()}
     else if (contains($mime-type, "json")) then openapi:to-openapi-json-schema(parse-json($example))
     else () else ()
   return map{ "schema":
@@ -361,7 +361,8 @@ as map(*)? {
         then map{ "nullable": true() }
         else (),
         $schema-from-example
-    ), map {'duplicates': 'use-last'})
+    ), map {'duplicates': 'use-last'}),
+    'example': if (normalize-space($example) ne '') then $example else "No example provided!" 
   }
 };
 
