@@ -1,5 +1,7 @@
 # OpenAPI
 
+[![pipeline status](https://gitlab.com/acdh-oeaw/openapi4restxq/badges/master_basex/pipeline.svg)](https://gitlab.com/acdh-oeaw/openapi4restxq/commits/master_basex)
+
 OpenAPI (formerly swagger) is a standard for REST-API documentation and so
 optimized to describe standardized communication with HTTP.
 
