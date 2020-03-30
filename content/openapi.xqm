@@ -324,10 +324,10 @@ as map(*) {
   return
       map:merge((
       map{
-        $produces: openapi:schema-object($function/return, $produces, $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+        $produces: openapi:schema-object($function/returns, $produces, $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
       },
       subsequence($function/annotation[ends-with(@name, ":produces")], 2) ! map {
-        string(.): openapi:schema-object($function/return, string(.), $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+        string(.): openapi:schema-object($function/returns, string(.), $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
       }))
 };
 
@@ -358,7 +358,7 @@ as map(*)? {
         then map{ "nullable": true() }
         else (),
         $schema-from-example
-    ), map {'duplicates': 'use-last'}),
+    )),
     'example': if (normalize-space($example) ne '') then $example else "No example provided!" 
   }
 };
