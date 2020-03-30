@@ -32,7 +32,6 @@ build-master:
      HOME: /home/gitlab-runner
   script:
     - cp master.build.properties local.build.properties
-    - npm install
     - ant test
   artifacts:
     paths:
