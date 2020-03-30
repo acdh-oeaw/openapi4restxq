@@ -1,5 +1,5 @@
 build/
-node_modules/
 test/
+resources/swagger-ui-dist
 expath-pkg.xml
 index.html

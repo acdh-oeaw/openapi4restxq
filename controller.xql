@@ -14,7 +14,7 @@ if ($exist:path eq '') then
 else if ($exist:path eq "/") then
     (: redirect root path to index.html :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="index.html"/>
+        <forward url="resources/swagger-ui-dist/index.html"/>
     </dispatch>
 
 else if($exist:path eq "/openapi.json" and $exist:resource eq "openapi.json") then

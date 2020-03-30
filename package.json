@@ -1,10 +1,10 @@
 {
   "repository": {
     "type": "git",
-    "url": "https://gitlab.gwdg.de/subugoe/opanapi4restxq"
+    "url": "https://github.com/acdh-oeaw/openapi4restxq"
   },
   "license": "LGPL-3.0-or-later",
   "dependencies": {
-    "swagger-ui-dist": "^3.20.8"
+    "swagger-ui-dist": "^3.25.0"
   }
 }

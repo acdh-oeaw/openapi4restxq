@@ -6,14 +6,13 @@
   <property file="build.properties"/>
 
   <antversion property="antversion"/>
-  <available file="node_modules/swagger-ui-dist" type="dir" property="swagger-ui-dist.present"/>
   <target name="antversion-test">
     <antversion property="antversionReady" atleast="1.10"/>
     <fail unless="antversionReady">installed version of ant (${antversion}) is lower than the required one (1.10.0)</fail>
     <echo message="installed version of ant (${antversion}) is satisfying"/>
   </target>
 
-  <target name="xar" depends="cleanup, swagger-ui, spdx">
+  <target name="xar" depends="cleanup, swagger-ui-dist, spdx">
       <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
           <filterset>
               <filter token="project.version" value="${project.version}"/>
@@ -29,23 +28,13 @@
           excludes=".git/,${build.dir}/,${test.dir}/,node_modules/"/>
   </target>
 
-  <target name="swagger-ui-test" unless="swagger-ui-dist.present">
-    <echo level="warning">swagger-ui-dist is not available in ./node_modules.
-Run `npm install` first to build a package that includes swagger-ui.</echo>
-  </target>
-  <target name="swagger-ui" depends="swagger-ui-test" if="swagger-ui-dist.present">
+  <target name="swagger-ui-dist">
       <!-- swagger ui -->
-      <copy file="node_modules/swagger-ui-dist/favicon-16x16.png" tofile="resources/swagger/favicon-16x16.png" overwrite="true" />
-      <copy file="node_modules/swagger-ui-dist/favicon-32x32.png" tofile="resources/swagger/favicon-32x32.png" overwrite="true" />
-      <copy file="node_modules/swagger-ui-dist/swagger-ui.css" tofile="resources/swagger/swagger-ui.css" overwrite="true" />
-      <copy file="node_modules/swagger-ui-dist/swagger-ui-standalone-preset.js" tofile="resources/swagger/swagger-ui-standalone-preset.js" overwrite="true" />
-      <copy file="node_modules/swagger-ui-dist/swagger-ui-bundle.js" tofile="resources/swagger/swagger-ui-bundle.js" overwrite="true" />
-      <copy file="node_modules/swagger-ui-dist/index.html" tofile="index.html" overwrite="true" />
-      <replace file="index.html" token="&gt;Swagger UI&lt;" value="&gt;Swagger UI for ${project.title}&lt;"/>
-      <replace file="index.html" token=".css&quot; &lt;" value=".css&quot; /&lt;"/>
-      <replace file="index.html" token="UTF-8&quot;&lt;" value="UTF-8&quot;/&lt;"/>
-      <replaceregexp file="index.html" match="url:.*" replace=" url: 'openapi.json'," />
-      <replaceregexp file="index.html" match="(src|href)=&quot;\./" replace="\1=&quot;resources/swagger/" flags="g"/>
+      <replace file="resources/swagger-ui-dist/index.html" token="&gt;Swagger UI&lt;" value="&gt;Swagger UI for ${project.title}&lt;"/>
+      <replace file="resources/swagger-ui-dist/index.html" token=".css&quot; &lt;" value=".css&quot; /&lt;"/>
+      <replace file="resources/swagger-ui-dist/index.html" token="UTF-8&quot;&lt;" value="UTF-8&quot;/&lt;"/>
+      <replaceregexp file="resources/swagger-ui-dist/index.html" match="url:.*" replace=" url: 'openapi.json'," />
+      <replaceregexp file="resources/swagger-ui-dist/index.html" match="(src|href)=&quot;\./" replace="\1=&quot;resources/swagger-ui-dist/" flags="g"/>
   </target>
 
   <target name="cleanup">
