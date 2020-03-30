@@ -37,14 +37,37 @@ declare
 %test:arg("format", "xquery")
 %test:arg("getParam", "and-get")
 %test:arg("body", "<incomming><node/></incomming>")
+%test:assertEquals('{
+    "response": {
+        "n": 1,
+        "type": "application/json"
+    },
+    "parameters": {
+        "body": "<incomming><node/></incomming>",
+        "path": "here",
+        "int": 123,
+        "get1": "and-get"
+    },
+    "xml": "<test><parameters n=\"6\"><path>here</path><int>123</int><format>xquery</format><get1>and-get</get1><body><incomming><node/></incomming></body></parameters><response n=\"1\" type=\"application/json\"/></test>"
+}')
 function openapi-test-full:post(
     $paramPath as xs:string,
     $int as xs:int,
     $format as xs:string,
     $getParam as xs:string+,
     $body as item()*)
-as element(test) {
-    <test>
+as map(*) {
+   map {'parameters': map {
+          'path': $paramPath,
+          'int': $int,
+          'get1': $getParam,
+          'body': $body
+        },        
+        'response': map {
+          'type': 'application/json',
+          'n': 1
+        },
+        'xml': <test>
         <parameters n="6">
             <path>{ $paramPath }</path>
             <int>{ $int }</int>
@@ -54,6 +77,7 @@ as element(test) {
         </parameters>
         <response n="1" type="application/json"/>
     </test>
+   }
 };
 
 (:~
@@ -64,6 +88,11 @@ as element(test) {
 declare
   %rest:GET
   %rest:path("/openapi-test/simple/multi-module")
+  %test:assertEquals("
+    <test>
+        <parameters n='0'/>
+        <response n='1' type='application/xml'/>
+    </test>")
 function openapi-test-full:multi-post()
 as element(test) {
     <test>

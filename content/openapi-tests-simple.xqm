@@ -182,7 +182,7 @@ declare
 %rest:DELETE
 %rest:path("/openapi-test/simple/multi")
 function openapi-test-simple:multi-methods(){
-    ()
+    ('text', <test/>, 2)
 };
 
 (:~
@@ -226,7 +226,7 @@ as element(test) {
 declare
 %rest:POST("{$body}")
 %rest:path("/openapi-test/simple/multi-module")
-function openapi-test-simple:multi-post($body)
+function openapi-test-simple:multi-module-post($body)
 as element(test) {
     <test>
         <parameters n="0"/>

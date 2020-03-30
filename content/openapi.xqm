@@ -17,7 +17,7 @@ declare namespace repo="http://exist-db.org/xquery/repo";
 declare %private variable $openapi:supported-methods := ("rest:GET", "rest:HEAD", "rest:POST", "rest:PUT", "rest:DELETE");
 
 (:~
- : Prepares a JSON document usually to be stored as "openapi.json".
+ : Prepares a JSON document conforming to OpenAPI 3.0.2, usually to be stored as "openapi.json".
  : @param $target the collection to prepare the descriptor for, e.g. “/db/apps/application”
  :   :)
 declare function openapi:json($target as xs:string)
@@ -34,7 +34,7 @@ as xs:string {
  :)
 declare function openapi:main($target as xs:string)
 as map(*) {
-  let $modules-uris := collection($target)[ends-with(base-uri(), ".xqm")]/base-uri()
+  let $modules-uris := collection($target)[openapi:xquery-resource(string(base-uri()))]/base-uri()
   let $module :=
     for $module in $modules-uris
     let $test4rest := contains(util:binary-doc($module) => util:base64-decode(), "%rest:")
@@ -54,7 +54,9 @@ as map(*) {
     openapi:paths-object($module, $config),
     openapi:servers-object($config/openapi:servers),
     openapi:info-object($expath, $repo, $config/openapi:info),
-    openapi:tags-object($module, $config)
+    openapi:tags-object($module, $config),
+    openapi:components-object($config),
+    openapi:security-requirement-object($config)
     ))
 };
 
@@ -152,8 +154,8 @@ as map(*) {
 declare %private function openapi:operation-object($function as element(function), $config as element(openapi:config))
 as map(*) {
   let $name := $function/@name
-  let $desc := tokenize($function/description, "\n\s\n\s") ! normalize-space(.)
-  let $see := normalize-space($function/see)
+  let $desc := tokenize($function/description, "\n\s?\n\s?") ! normalize-space(.)
+  let $see := $function/see
   let $deprecated := $function/deprecated
   let $tags := array {
       if($config/openapi:tags/openapi:tag/openapi:function[@name = $name])
@@ -168,16 +170,16 @@ as map(*) {
   }
   return
   map:merge((
-    for $method in $function/annotation[@name = $openapi:supported-methods]/substring-after(lower-case(@name), "rest:")
+    for $methodName in $function/annotation[@name = $openapi:supported-methods]/substring-after(lower-case(@name), "rest:")
     return
     map{
-      $method:
+      $methodName:
       map:merge((
-        map{ "summary": $desc[1]},
-        map{ "description": $desc[2]},
+        map{ "summary": if (normalize-space($desc[1]) ne '') then $desc[1] else "Undocumented!"},
+        $desc[2] ! map{ "description": .},
         map{ "tags": $tags},
         $see[1] ! map{"externalDocs": $see ! map{
-          "url": .,
+          "url": normalize-space(.),
           "description": "the official documentation by the maintainer or a thrid-party documentation"}},
         $deprecated ! map{"deprecated": true()},
         openapi:parameter-object($function),
@@ -190,23 +192,21 @@ as map(*) {
 
 declare %private function openapi:requestBody-object($function as element(function))
 as map(*)? {
-if(not(exists($function/annotation[@name = ("rest:POST", "rest:PUT")]/value))) then () else
-    let $name := replace($function/annotation[@name = ("rest:POST", "rest:PUT")]/value, "\{|\}|\$", "")
-    let $desc := string($function/argument[@var eq $name])
-    let $example := string(($function/annotation[@name="test:arg"][value[1] eq $name])[1]/value[2])
+let $varParm := $function/annotation[@name = ("rest:POST", "rest:PUT")]/value[1]
+return if(not(exists($varParm))) then () else
+    let $name := replace($varParm, "\{|\}|\$", "")
+    let $desc := string($function/argument[@name eq $name])
+    let $example := string(($function/annotation[ends-with(@name, ":arg")][value[1] eq $name])[1]/value[2])
+    let $consumes := (
+      $function/annotation[ends-with(@name, ':consumes')]/value,
+      'application/xml'
+    )[. != ""][1]
     return
     map{
         "requestBody":  map{
-            "description": "Value to process as variable: $" || $name,
+            "description": $desc||" Processed as variable: $" || $name,
             "content": map{
-                "application/xml": map{
-                    "examples": map{
-                        $name: map{
-                            "summary": $desc,
-                            "value": serialize($example)
-                        }
-                    }
-                }
+                $consumes: openapi:schema-object($function/argument[@var eq $name], $consumes, $example)
             },
             "required": true()
         }
@@ -265,15 +265,15 @@ as map(*)* {
     for $parameter in $pathParameters
     let $name := replace($parameter, "\{|\$|\}", "")
     let $argument := $function/argument[@var eq $name]
+    let $example := openapi:example($function, $name)
     let $basics := map:merge((
                 map{
                     "name": $name,
                     "in": "path",
                     "required": true()},
-                    openapi:schema-object($argument)
+                    openapi:schema-object($argument, 'text/plain', $example('example'))
     ))
     let $description := $function/argument[@var = $name]/text() ! map{ "description": .}
-    let $example := openapi:example($function, $name)
     return
         map:merge(($basics, $description, $example))
 
@@ -289,11 +289,12 @@ as map(*)* {
     let $parameters := $function/annotation[@name = "rest:" || $source || "-param"]
     for $annotation in $parameters
         let $varName := string($annotation/value[2]) => replace("\{|\$|\}", "")
+        let $example := openapi:example($function, $varName)
         let $name := string($annotation/value[1])
         let $argument := $function/argument[@var eq $varName]
         let $required :=
-            (: when a default value is present and the cardinality is not ? or * :)
-            exists($annotation/value[3]) and not(contains($argument/@cardinality, "zero"))
+            (: not required when either a default value is present or the cardinality contains zero :)
+            not(exists($annotation/value[3]) or contains($argument/@cardinality, "zero"))
         let $basics :=
                 map:merge((
                     map{
@@ -301,10 +302,9 @@ as map(*)* {
                         "in": $source,
                         "required": $required
                         },
-                        openapi:schema-object($argument)
+                        openapi:schema-object($argument, 'text/plain', $example('example'))
                 ))
         let $description := $argument/text() ! map{ "description": .}
-        let $example := openapi:example($function, $varName)
         return
             map:merge(($basics, $description, $example))
 };
@@ -313,38 +313,53 @@ as map(*)* {
  : Prepare OAS3 Media Type Object.
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare %private function openapi:mediaType-object($function)
+declare function openapi:mediaType-object($function)
 as map(*) {
   let $produces := (
-        string($function/annotation[@name="rest:produces"]),
+        string($function/annotation[ends-with(@name, ":produces")][1]),
         string($function/annotation[@name="output:media-type"]),
         string($function/annotation[@name="output:method"]/openapi:method-mediaType(string(.))),
         "application/xml"
-      )
+      )[. != ""][1]
   return
-    map{
-      $produces[. != ""][1]: openapi:schema-object($function/returns)
-    }
+      map:merge((
+      map{
+        $produces: openapi:schema-object($function/return, $produces, $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+      },
+      subsequence($function/annotation[ends-with(@name, ":produces")], 2) ! map {
+        string(.): openapi:schema-object($function/return, string(.), $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+      }))
 };
 
 (:~
  : Prepare OAS3 Schema Object.
  : @param $returns A element from the inspect-module() function,
+ : @param $mime-type A mime type for return or body values or complex arguments
  : either *:returns or *:argument
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare %private function openapi:schema-object($returns as element(*))
+declare function openapi:schema-object($returns_or_argument as element(*), $mime-type as xs:string, $example as xs:string?)
 as map(*)? {
-  map{ "schema":
+  let $schema-from-example := if (normalize-space($example) ne '') then
+    if (contains($mime-type, "xml")) then      
+      let $root-element-name-from-type := replace(data($returns_or_argument/@type)[matches(., 'element\((.*)\)')], 'element\((.*)\)', '$1')
+      let $root-element-name-from-example := try { local-name(parse-xml-fragment($example)/*) } catch * {()}
+      let $root-element-name := ($root-element-name-from-type, $root-element-name-from-example, 'no-tag-name')[. != ""][1]
+      return try { openapi:to-openapi-xml-schema(parse-xml-fragment($example))('properties')($root-element-name)} catch * {()}
+    else if (contains($mime-type, "json")) then openapi:to-openapi-json-schema(parse-json($example))
+    else () else ()
+  return map{ "schema":
     map:merge((
         map{
           "type": "string",
-          "x-xml-type": string($returns/@type)
+          "x-xml-type": string($returns_or_argument/@type)
         },
-        if(contains($returns/@cardinality, "zero"))
+        if(contains($returns_or_argument/@cardinality, "zero"))
         then map{ "nullable": true() }
-        else ()
-    ))
+        else (),
+        $schema-from-example
+    ), map {'duplicates': 'use-last'}),
+    'example': if (normalize-space($example) ne '') then $example else "No example provided!" 
   }
 };
 
@@ -365,6 +380,62 @@ as map(*) {
                 "description": normalize-space($tag)
             }
     }
+  }
+};
+
+(:~
+ : Create the components part of the openapi spec.
+ : Stub: only reads basic http security scheme
+ : @see https://swagger.io/specification/#componentsObject 
+ :)
+declare function openapi:components-object($config as element(openapi:config))
+as map(*) {
+  map {
+    "components": map:merge((
+      $config/openapi:components/openapi:schemas[1] ! map {
+        "schemas": ""
+      },
+      $config/openapi:components/openapi:parameters[1] ! map {
+        "parameters": ""
+      },
+      $config/openapi:components/openapi:responses[1] ! map {
+        "responses": ""
+      },
+      $config/openapi:components/openapi:securitySchemes[1] ! map {
+        "securitySchemes": openapi:security-scheme-object(.)
+      }
+    ))
+  }
+};
+
+declare function openapi:security-scheme-object($securitySchemes as element(openapi:securitySchemes))
+as map(*) {
+  map:merge((
+  $securitySchemes/openapi:securityScheme ! map {
+    string(./@name): map:merge(( map {
+      'description': normalize-space(./text()),
+      'type': string(./openapi:type)
+    },
+    ./openapi:scheme[1] ! map {
+      'scheme': string(.)
+    }
+    ))
+  }))
+};
+
+(:~
+ : Create the components part of the openapi spec.
+ : Stub: only reads basic http security scheme
+ : @see https://swagger.io/specification/#securityRequirementObject
+ :)
+declare function openapi:security-requirement-object($config as element(openapi:config))
+as map(*)? {
+  $config/openapi:security[1] ! map {
+    "security": array {(
+    ./openapi:SecurityRequirement ! map {
+      string(./@name): [(: list of scope names for "oauth2" or "openIdConnect" :)]
+    }
+  )}
   }
 };
 
@@ -407,6 +478,48 @@ as xs:string?{
  : @param $name The name of the argument to prepare an example for :)
 declare %private function openapi:example($function as element(function), $name as xs:string)
 as map(*)* {
-    string(($function/annotation[@name = "test:arg"][value[1] eq $name])[1]/value[2])
+    string(($function/annotation[ends-with(@name, ":arg")][value[1] eq $name])[1]/value[2])
     ! map{ "example": .}
+};
+
+declare function openapi:xquery-resource($baseuri as xs:string)
+as xs:boolean {
+     ends-with($baseuri, ".xqm")
+  or ends-with($baseuri, ".xql")
+  or ends-with($baseuri, ".xq")
+};
+
+declare function openapi:to-openapi-xml-schema($xml as node()) as map(*) {
+    let $child-elements := for $child-element in $xml/(element(), @*)
+                           return map{$child-element/local-name(): openapi:to-openapi-xml-schema($child-element)},
+        $child-texts := for $child-text in $xml/(text()) return openapi:to-openapi-xml-schema($child-text)
+    return map:merge((
+        map {
+        'type': if (exists($child-elements)) then 'object' else 'string' (: lots of castable as ... :),
+        'xml': map:merge((map {'name': $xml/local-name()}, if ($xml instance of attribute()) then map {'attribute': true()} else ()))
+        },
+        if (exists($child-elements)) then map {'properties': map:merge($child-elements)} else (),
+        if (exists($child-texts) or $xml instance of attribute()) then map {'example': xs:string($xml)} else ()))
+};
+
+declare function openapi:to-openapi-json-schema($json as map(*)) {
+    let $child-objects := for $child-key in map:keys($json)
+                          where $json($child-key) instance of map(*)
+                          return map {$child-key: openapi:to-openapi-json-schema($json($child-key))},
+        $leave-objects := for $leave-key in map:keys($json)
+           where not($json($leave-key) instance of map(*))
+           return map {$leave-key: map{
+               'type': 'string',
+               'example': $json($leave-key)}}
+    return map {
+      'properties': map:merge(($child-objects, $leave-objects)),
+      'type': 'object'
+    }
+};
+
+declare %private function openapi:xquery-resource($baseuri as xs:string)
+as xs:boolean {
+     ends-with($baseuri, ".xqm")
+  or ends-with($baseuri, ".xql")
+  or ends-with($baseuri, ".xq")
 };
