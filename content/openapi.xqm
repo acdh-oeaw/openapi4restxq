@@ -446,7 +446,7 @@ as map(*)? {
  :)
 declare function openapi:spdx($licenseId as xs:string)
 as map(*) {
-let $collection-uri := /id("restxqopenapi")/base-uri()
+let $collection-uri := collection("/")/id("restxqopenapi")/base-uri()
 let $item :=
  (($collection-uri || "/../spdx-licenses.json")
   => json-doc())("licenses")?*[?licenseId = $licenseId]
