@@ -223,7 +223,7 @@ as map(*){
     "responses":
     map{
       "200": map{
-        "description": string($function/returns),
+        "description": string($function/returns[./text()]),
         "content": openapi:mediaType-object($function)
       }
     }
@@ -324,10 +324,10 @@ as map(*) {
   return
       map:merge((
       map{
-        $produces: openapi:schema-object($function/returns, $produces, $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+        $produces: openapi:schema-object($function/returns[@*], $produces, $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
       },
       subsequence($function/annotation[ends-with(@name, ":produces")], 2) ! map {
-        string(.): openapi:schema-object($function/returns, string(.), $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+        string(.): openapi:schema-object($function/returns[@*], string(.), $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
       }))
 };
 
@@ -446,7 +446,7 @@ as map(*)? {
  :)
 declare function openapi:spdx($licenseId as xs:string)
 as map(*) {
-let $collection-uri := collection("/")/id("restxqopenapi")/base-uri()
+let $collection-uri := system:get-module-load-path()
 let $item :=
  (($collection-uri || "/../spdx-licenses.json")
   => json-doc())("licenses")?*[?licenseId = $licenseId]
