@@ -1,6 +1,7 @@
 <meta xmlns="http://exist-db.org/xquery/repo">
     <description>Prepares an API documentation according to the OpenAPI 3.0.2 schema and offers swagger-ui</description>
     <author>Mathias Göbel</author>
+    <author>Omar Siam</author>
     <website>https://lab.sub.uni-goettingen.de</website>
     <status>stable</status>
     <license ref="https://spdx.org/licenses/">LGPL-3.0-or-later</license>
@@ -8,6 +9,14 @@
     <type>application</type>
     <target>openapi</target>
     <changelog>
+      <change version="1.5.4">
+        <ul xmlns="http://www.w3.org/1999/xhtml">
+          <li class="feat">multiple status codes
+          </li>
+          <li class="feat">standoff tests for examples
+          </li>
+        </ul>
+      </change>
       <change version="1.5.3">
         <ul xmlns="http://www.w3.org/1999/xhtml">
           <li class="bugs">Yarn, swagger-ui, namespaces
