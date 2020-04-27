@@ -41,6 +41,18 @@ as map(*) {
     where $test4rest
     return
       inspect:inspect-module($module)[.//annotation[@name = $openapi:supported-methods]]
+  let $fn-clark-notations :=
+    for $fn in $module/function
+    where $fn/annotation[@name = ("rest:GET", "rest:HEAD", "rest:POST", "rest:PUT", "rest:DELETE")]
+    return openapi:function-to-clark-notation($fn)
+  let $test-fns :=
+    for $module in $modules-uris
+    let $test4test := contains(util:binary-doc($module) => util:base64-decode(), "%test:")
+    where $test4test
+    return
+      inspect:inspect-module($module)/function[some $fn in $fn-clark-notations satisfies contains(replace(see, '^\s+', ''), $fn)]!
+      openapi:parse-rest-response-assert(.)
+  let $module := openapi:merge-asserts($module, $test-fns)
 
   let $config-uri := $target || "/openapi-config.xml"
   let $config :=  if(doc-available($config-uri))
@@ -58,6 +70,34 @@ as map(*) {
     openapi:components-object($config),
     openapi:security-requirement-object($config)
     ))
+};
+
+declare function openapi:function-to-clark-notation($fn as element(function)) as xs:string {
+  '{'||$fn/@module||'}'||replace($fn/@name, '^'||$fn/../@prefix/data()||':', '')
+};
+
+declare function openapi:parse-rest-response-assert($fn as element(function)) as element(function) {
+  <function>{$fn/@*}{
+      for $e in $fn/*
+      return if ($e instance of element(annotation) and $e/@name="test:assertEquals") then
+        <annotation>{$e/@*}{<value>{
+            try {parse-xml($e/value[1]/text())} catch * {$e/value[1]/text()}
+        }</value>}{$e/value[position() > 1]}</annotation>
+      else $e
+  }
+  </function>  
+};
+
+declare function openapi:merge-asserts($module as element(module)*, $test-fns as element(function)*) as element(module)* {
+  for $m in $module
+  return
+  <module>{$m/@*}{
+      for $e in $m/*
+      return if ($e instance of element(function)) then
+        <function>{$e/@*}{$e/*}{$test-fns[contains(see/text(), openapi:function-to-clark-notation($e))]/annotation[@name = "test:assertEquals"]}</function>
+      else $e
+  }
+  </module>
 };
 
 (:~
@@ -221,12 +261,21 @@ declare %private function openapi:responses-object($function as element(function
 as map(*){
   map{
     "responses":
-    map{
+    map:merge((map{
       "200": map{
         "description": string($function/returns[./text()]),
-        "content": openapi:mediaType-object($function)
+        "content": openapi:mediaType-object($function, "200")
       }
-    }
+    },
+    let $parsed := analyze-string($function/error, '\s*(\d\d\d)\s+(.*)\s*\n')
+    return for $m in $parsed/*:match
+      return map {
+        xs:string($m/*:group[@nr=1]): map{
+          "description": xs:string($m/*:group[@nr=2]),
+          "content": openapi:mediaType-object($function, $m/*:group[@nr=1])
+        }
+      }
+    ))
  }
 };
 
@@ -313,7 +362,7 @@ as map(*)* {
  : Prepare OAS3 Media Type Object.
  : @see https://swagger.io/specification/#mediaTypeObject
  :  :)
-declare function openapi:mediaType-object($function)
+declare function openapi:mediaType-object($function, $status-code as xs:string)
 as map(*) {
   let $produces := (
         string($function/annotation[ends-with(@name, ":produces")][1]),
@@ -324,10 +373,12 @@ as map(*) {
   return
       map:merge((
       map{
-        $produces: openapi:schema-object($function/returns[@*], $produces, $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+        $produces: openapi:schema-object($function/returns[@*], $produces,
+          string-join($function/annotation[ends-with(@name, ":assertEquals")][not(value/rest:response) or value/rest:response/*:response/@status/data() = $status-code]/value[. != ''], '&#x0a;'))
       },
       subsequence($function/annotation[ends-with(@name, ":produces")], 2) ! map {
-        string(.): openapi:schema-object($function/returns[@*], string(.), $function/annotation[ends-with(@name, ":assertEquals")]/value[1])
+        string(.): openapi:schema-object($function/returns[@*], string(.),
+        string-join($function/annotation[ends-with(@name, ":assertEquals")][not(value/rest:response) or value/rest:response/*:response/@status/data() = $status-code]/value[. != ''], '&#x0a;'))
       }))
 };
 
