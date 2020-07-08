@@ -533,13 +533,6 @@ as map(*)* {
     ! map{ "example": .}
 };
 
-declare function openapi:xquery-resource($baseuri as xs:string)
-as xs:boolean {
-     ends-with($baseuri, ".xqm")
-  or ends-with($baseuri, ".xql")
-  or ends-with($baseuri, ".xq")
-};
-
 declare function openapi:to-openapi-xml-schema($xml as node()) as map(*) {
     let $child-elements := for $child-element in $xml/(element(), @*)
                            return map{$child-element/local-name(): openapi:to-openapi-xml-schema($child-element)},
