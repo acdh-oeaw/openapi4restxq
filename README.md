@@ -42,6 +42,35 @@ swagger-ui using the `/openapi` URL.
 
 ### Integrated in own applications
 
+* `repo.xml`
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<meta xmlns="http://exist-db.org/xquery/repo">
+    <description>Describe your project</description>
+    <author>Your Name</author>
+    <website>urn:yourprojects_website</website>
+    <status>development</status>
+    <license ref="https://spdx.org/licenses/">MIT</license>
+    <copyright>true</copyright>
+    <type>application</type>
+    <target>yourproject</target>
+    <changelog>
+      <change version="0.3.0">
+        <ul xmlns="http://www.w3.org/1999/xhtml">
+          <li class="feat">Features
+            <ul style="margin-left: 15px;">
+              <li>Changed sth.</li>
+              <li>Changed sth. else</li>
+              <li>Yet another change</li>
+            </ul>
+          </li>
+        </ul>
+      </change>
+    </changelog>
+</meta>
+```
+
 You need some info XML files:
 
 * `expath-pkg.xml`
