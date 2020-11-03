@@ -362,7 +362,8 @@ as map(*)? {
         else (),
         $schema-from-example
     ), map {'duplicates': 'use-last'}),
-    'example': if (normalize-space($example) ne '') then $example else "No example provided!" 
+    'example': if (normalize-space($example) ne '') then $example else
+                 if ($returns_or_argument/@occurrence = ("*", "?")) then "" else "No example provided!" 
   }
 };
 
