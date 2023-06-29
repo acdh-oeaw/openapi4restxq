@@ -160,9 +160,10 @@ as map(*) {
   let $tags := array {
       if($config/openapi:tags/openapi:tag/openapi:function[@name = $name])
       then
-        if($config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@method) = "exclusive")
-        then $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag[@method = "exclusive"]/string(@name)
-        else
+        switch ($config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@method)) 
+        case "exclusive" return $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag[@method = "exclusive"]/string(@name)
+        case "hidden" return "hidden"
+        default return
             ($name => substring-before(":"),
             $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@name))
       else
@@ -171,6 +172,7 @@ as map(*) {
   return
   map:merge((
     for $method in $function/annotation[@name = $openapi:supported-methods]/@name
+    where not(exists(index-of($tags?*, "hidden")))
     let $methodName := if (ends-with($method, ':method')) 
       then lower-case($method/../literal[1])
       else substring-after(lower-case($method), "rest:")
