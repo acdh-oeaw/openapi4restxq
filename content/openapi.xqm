@@ -160,7 +160,7 @@ as map(*) {
   let $tags := array {
       if($config/openapi:tags/openapi:tag/openapi:function[@name = $name])
       then
-        switch ($config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@method)) 
+        switch (($config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@method))[1]) 
         case "exclusive" return $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag[@method = "exclusive"]/string(@name)
         case "hidden" return "hidden"
         default return
