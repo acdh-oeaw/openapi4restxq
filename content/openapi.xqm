@@ -212,7 +212,7 @@ return if(not(exists($varParm))) then () else
         "requestBody":  map{
             "description": $desc||" Processed as variable: $" || $name,
             "content": map{
-                $consumes: openapi:schema-object($function/argument[@name eq $name], $consumes, $example)
+                $consumes: openapi:schema-object($function/argument[@name eq $name] transform with {delete node ./@occurrence}, $consumes, $example)
             },
             "required": true()
         }
@@ -356,17 +356,20 @@ as map(*)? {
     else () else ()
   return map{ "schema":
     map:merge((
-        map{
+        if (contains($mime-type, "xml")) then map{
           "type": "string",
           "x-xml-type": string($returns_or_argument/@type)
-        },
+        } else (),
         if($returns_or_argument/@occurrence = ("*", "?"))
         then map{ "nullable": true() }
         else (),
         $schema-from-example
     ), map {'duplicates': 'use-last'}),
-    'example': if (normalize-space($example) ne '') then $example else
-                 if ($returns_or_argument/@occurrence = ("*", "?")) then "" else "No example provided!" 
+    'example': if (normalize-space($example) ne '') then
+       if (contains($mime-type, "json")) then parse-json($example)
+       else $example
+     else if ($returns_or_argument/@occurrence = ("*", "?")) then ""
+     else "No example provided!" 
   }
 };
 
