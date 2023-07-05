@@ -140,7 +140,7 @@ as map(*) {
         let $functions := $module/function[annotation[@name = "rest:path"]/literal = $path]
         return
           map{
-              $path => replace("\{\$", "{"):
+              $path => replace("\{\$", "{") => replace("^([^/])", '/$1'):
                 map:merge(($functions ! openapi:operation-object(., $config)))
           }
       ))
@@ -180,8 +180,9 @@ as map(*) {
     map{
       $methodName:
       map:merge((
-        map{ "summary": if (normalize-space($desc[1]) ne '') then $desc[1] else "Undocumented!"},
-        $desc[2] ! map{ "description": .},
+        map{ "summary": if (normalize-space($desc[1]) ne '') then $desc[1] else "Undocumented!",
+             "description": if (exists($desc[2]) and normalize-space($desc[2]) ne '') then $desc[2] else "no further description",
+             "operationId": xs:string($name)},
         map{ "tags": $tags},
         $see[1] ! map{"externalDocs": $see ! map{
           "url": normalize-space(.),
@@ -374,12 +375,14 @@ as map(*) {
   map{
     "tags": array{
         for $module in $modules
+        group by $name := string($module/@prefix)
         return
             map{
-                "name": string($module/@prefix),
-                "description": normalize-space($module/description)
+                "name": $name,
+                "description": normalize-space($module[1]/description)
             },
         for $tag in $config/openapi:tags/openapi:tag
+        where $tag/@method != 'hidden'
         return
             map{
                 "name": string($tag/@name),
