@@ -352,7 +352,7 @@ as map(*)? {
       let $root-element-name-from-example := try { local-name(parse-xml-fragment($example)/*) } catch * {()}
       let $root-element-name := ($root-element-name-from-type, $root-element-name-from-example, 'no-tag-name')[. != ""][1]
       return try { openapi:to-openapi-xml-schema(parse-xml-fragment($example))('properties')($root-element-name)} catch * {()}
-    else if (contains($mime-type, "json")) then openapi:to-openapi-json-schema(parse-json($example))
+    else if (contains($mime-type, "json")) then try { openapi:to-openapi-json-schema(parse-json($example))} catch * {error(xs:QName('openapi:json-parse'), 'Invalid JSON', $example)}
     else () else ()
   return map{ "schema":
     map:merge((
@@ -425,7 +425,7 @@ as map(*) {
   map:merge((
   $securitySchemes/openapi:securityScheme ! map {
     string(./@name): map:merge(( map {
-      'description': normalize-space(./text()),
+      'description':string-join(./text()!normalize-space(.)),
       'type': string(./openapi:type)
     },
     ./openapi:scheme[1] ! map {
