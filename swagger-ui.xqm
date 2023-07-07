@@ -2,7 +2,6 @@ xquery version "3.1";
 module namespace _ = "https://lab.sub.uni-goettingen.de/restxqopenapi/swagger-ui";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi" at "content/openapi.xqm";
 import module namespace request = "http://exquery.org/ns/request";
-import module namespace jobs = "http://basex.org/modules/jobs";
 import module namespace l = "http://basex.org/modules/admin";
 
 import module namespace rest = "http://exquery.org/ns/restxq";
@@ -91,7 +90,11 @@ function _:index-file() as item()+ {
 (:      $log := l:write-log('api:index-file() $uri := '||$uri||' base-uri-public := '||api:get-base-uri-public(), 'DEBUG'),:)
       $absolute-prefix := if (matches(_:get-base-uri-public(), '/$')) then () else _:get-base-uri-public()||'/'
   return if (exists($absolute-prefix)) then
-    <rest:redirect>{$absolute-prefix}</rest:redirect>
+    <rest:response>
+      <http:response status="302">
+        <http:header name="Location" value="{$absolute-prefix}"/>
+      </http:response>
+    </rest:response>
   else if (file:exists($index-html)) then
     <rest:forward>index.html</rest:forward>
   else _:forbidden-file($index-html)    

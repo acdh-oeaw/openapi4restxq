@@ -149,7 +149,7 @@ as map(*) {
                     }
         return
           map{
-              $path => replace("\{\$", "{"):
+              $path => replace("\{\$", "{") => replace("^([^/])", '/$1'):
                 map:merge(($pathParameters ! map{'parameters': array {$pathParameters}}, $operationsWithoutPP))
           }
       ))
@@ -169,9 +169,10 @@ as map(*) {
   let $tags := array {
       if($config/openapi:tags/openapi:tag/openapi:function[@name = $name])
       then
-        if($config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@method) = "exclusive")
-        then $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag[@method = "exclusive"]/string(@name)
-        else
+        switch (($config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@method))[1]) 
+        case "exclusive" return $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag[@method = "exclusive"]/string(@name)
+        case "hidden" return "hidden"
+        default return
             ($name => substring-before(":"),
             $config/openapi:tags/openapi:tag/openapi:function[@name = $name]/parent::openapi:tag/string(@name))
       else
@@ -180,6 +181,7 @@ as map(*) {
   return
   map:merge((
     for $method in $function/annotation[@name = $openapi:supported-methods]/@name
+    where not(exists(index-of($tags?*, "hidden")))
     let $methodName := if (ends-with($method, ':method')) 
       then lower-case($method/../literal[1])
       else substring-after(lower-case($method), "rest:")
@@ -187,8 +189,9 @@ as map(*) {
     map{
       $methodName:
       map:merge((
-        map{ "summary": if (normalize-space($desc[1]) ne '') then $desc[1] else "Undocumented!"},
-        $desc[2] ! map{ "description": .},
+        map{ "summary": if (normalize-space($desc[1]) ne '') then $desc[1] else "Undocumented!",
+             "description": if (exists($desc[2]) and normalize-space($desc[2]) ne '') then $desc[2] else "no further description",
+             "operationId": xs:string($name)},
         map{ "tags": $tags},
         $see[1] ! map{"externalDocs": $see ! map{
           "url": normalize-space(.),
@@ -218,7 +221,7 @@ return if(not(exists($varParm))) then () else
         "requestBody":  map{
             "description": $desc||" Processed as variable: $" || $name,
             "content": map{
-                $consumes: openapi:schema-object($function/argument[@name eq $name], $consumes, $example)
+                $consumes: openapi:schema-object($function/argument[@name eq $name] transform with {delete node ./@occurrence}, $consumes, $example)
             },
             "required": true()
         }
@@ -358,20 +361,27 @@ as map(*)? {
       let $root-element-name-from-example := try { local-name(parse-xml-fragment($example)/*) } catch * {()}
       let $root-element-name := ($root-element-name-from-type, $root-element-name-from-example, 'no-tag-name')[. != ""][1]
       return try { openapi:to-openapi-xml-schema(parse-xml-fragment($example))('properties')($root-element-name)} catch * {()}
-    else if (contains($mime-type, "json")) then openapi:to-openapi-json-schema(parse-json($example))
+    else if (contains($mime-type, "json")) then try { openapi:to-openapi-json-schema(parse-json($example))} catch * {error(xs:QName('openapi:json-parse'), 'Invalid JSON', $example)}
     else () else ()
   return map:merge((map{ "schema":
     map:merge((
-        map{
+        if (contains($mime-type, "xml")) then map{
           "type": "string",
           "x-xml-type": string($returns_or_argument/@type)
-        },
+        } else (),
         if($returns_or_argument/@occurrence = ("*", "?"))
         then map{ "nullable": true() }
         else (),
         $schema-from-example
     ), map {'duplicates': 'use-last'})},
-    if (normalize-space($example) ne '') then map { 'example': $example } else ()))
+    if (normalize-space($example) ne '') then
+    map { 'example': if (contains($mime-type, "json")) then parse-json($example)
+                     else $example }
+    else if ($returns_or_argument/@occurrence = ("*", "?")) then ()
+    (: map { 'example': "" } :)
+    else ()
+    (: map { 'example': "No example provided!" } :) 
+  ))
 };
 
 declare function openapi:tags-object($modules as element(module)+, $config as element(openapi:config))
@@ -379,12 +389,14 @@ as map(*) {
   map{
     "tags": array{
         for $module in $modules
+        group by $name := string($module/@prefix)
         return
             map{
-                "name": string($module/@prefix),
-                "description": normalize-space($module/description)
+                "name": $name,
+                "description": normalize-space($module[1]/description)
             },
         for $tag in $config/openapi:tags/openapi:tag
+        where $tag/@method != 'hidden'
         return
             map{
                 "name": string($tag/@name),
@@ -424,7 +436,7 @@ as map(*) {
   map:merge((
   $securitySchemes/openapi:securityScheme ! map {
     string(./@name): map:merge(( map {
-      'description': normalize-space(./text()),
+      'description':string-join(./text()!normalize-space(.)),
       'type': string(./openapi:type)
     },
     ./openapi:scheme[1] ! map {
